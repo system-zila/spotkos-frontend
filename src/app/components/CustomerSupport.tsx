@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { io, Socket } from 'socket.io-client'; // <-- TAMBAHAN: Import Socket
+import { io, Socket } from 'socket.io-client';
 
 const FAQ_TEMPLATES = [
   { q: "Bagaimana cara bayar?", a: "Pembayaran sangat mudah! Cukup klik 'Booking Sekarang' di halaman detail kos, lalu pilih metode pembayaran melalui sistem aman Midtrans." },
@@ -22,12 +22,12 @@ export function CustomerSupport() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef<Socket | null>(null); // <-- TAMBAHAN: Referensi Socket
+  const socketRef = useRef<Socket | null>(null);
 
-  // MENGAMBIL RIWAYAT CHAT DARI MYSQL
   const fetchChats = async () => {
     if (!user?.email) return;
     try {
+      // ✅ FIX: Menggunakan backtick
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/support/chats?email=${user.email}`);
       const data = await res.json();
       setMessages(data);
@@ -40,16 +40,15 @@ export function CustomerSupport() {
     if (isOpen && user) {
       fetchChats();
 
-      // <-- TAMBAHAN: KONEKSI SOCKET UNTUK REAL-TIME CHAT
       if (!socketRef.current) {
-        socketRef.current = io('${import.meta.env.VITE_API_URL}');
+        // ✅ FIX: Menggunakan backtick untuk koneksi socket
+        socketRef.current = io(`${import.meta.env.VITE_API_URL}`);
         socketRef.current.on('new_support_chat', () => {
-          fetchChats(); // Tarik pesan admin baru otomatis tanpa refresh
+          fetchChats();
         });
       }
     }
 
-    // <-- TAMBAHAN: PUTUSKAN KONEKSI SAAT CHAT DITUTUP
     return () => {
       if (!isOpen && socketRef.current) {
         socketRef.current.disconnect();
@@ -62,16 +61,16 @@ export function CustomerSupport() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
-  // MENGIRIM PESAN KE MYSQL (REAL DATA)
   const saveMessageToDB = async (sender: string, text: string) => {
     if (!user?.email) return;
     try {
-      await fetch('${import.meta.env.VITE_API_URL}/api/support/chats', {
+      // ✅ FIX: Menggunakan backtick
+      await fetch(`${import.meta.env.VITE_API_URL}/api/support/chats`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user.email, sender, message: text })
       });
-      fetchChats(); // Refresh data dari DB
+      fetchChats();
     } catch (err) {
       console.error('Gagal menyimpan chat', err);
     }
@@ -80,31 +79,25 @@ export function CustomerSupport() {
   const handleSend = async (text: string, isTemplate: boolean = false) => {
     if (!text.trim() || !user) return;
 
-    // 1. Simpan pertanyaan User ke DB
     await saveMessageToDB('user', text);
     setMessage('');
 
-    // 2. Jika Template, Simpan jawaban Bot ke DB
     if (isTemplate) {
       const template = FAQ_TEMPLATES.find(t => t.q === text);
       if (template) {
         setTimeout(async () => {
           await saveMessageToDB('bot', template.a);
-        }, 500); // Simulasi delay mengetik bot
+        }, 500);
       }
     } 
-    // CATATAN: Logika Bot "Menunggu Admin" (yang muncul setiap kali ngetik manual) SUDAH DIHAPUS agar tidak annoying.
   };
 
-  // Jika belum login, tombol chat tidak perlu muncul atau bisa diarahkan login
   if (!user) return null; 
 
-  // Menentukan apakah perlu menampilkan template (hanya jika belum pernah chat)
   const showTemplates = messages.length === 0 || (messages.length === 1 && messages[0].sender === 'bot');
 
   return (
     <>
-      {/* Tombol Floating */}
       <button
         onClick={() => setIsOpen(true)}
         className={`fixed bottom-6 right-6 w-14 h-14 bg-[#FF6B35] text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition-all z-50 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
@@ -113,10 +106,8 @@ export function CustomerSupport() {
         <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full animate-pulse"></span>
       </button>
 
-      {/* Jendela Chat */}
       <div className={`fixed bottom-6 right-6 w-[380px] bg-white rounded-[32px] shadow-2xl border border-gray-100 z-50 overflow-hidden flex flex-col transition-all duration-300 origin-bottom-right ${isOpen ? 'scale-100 opacity-100 h-[600px] pointer-events-auto' : 'scale-50 opacity-0 h-0 pointer-events-none'}`}>
         
-        {/* Header */}
         <div className="bg-[#002855] p-5 flex items-center justify-between text-white shrink-0">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -137,10 +128,7 @@ export function CustomerSupport() {
           </button>
         </div>
 
-        {/* Area Pesan */}
         <div className="flex-1 overflow-y-auto p-5 bg-[#faf9f6] space-y-4">
-          
-          {/* Sapaan Default jika kosong */}
           {messages.length === 0 && (
              <div className="flex gap-2 max-w-[85%] items-start">
                <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center bg-gray-200">
@@ -154,7 +142,6 @@ export function CustomerSupport() {
              </div>
           )}
 
-          {/* Render Pesan dari Database */}
           {messages.map((msg) => (
             <div key={msg.id} className={`flex gap-2 max-w-[85%] ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : ''}`}>
               <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center bg-gray-200">
@@ -169,7 +156,6 @@ export function CustomerSupport() {
             </div>
           ))}
           
-          {/* Render Template Pertanyaan jika riwayat masih kosong */}
           {showTemplates && (
             <div className="flex flex-col gap-2 pt-2">
               {FAQ_TEMPLATES.map((faq, idx) => (
@@ -186,7 +172,6 @@ export function CustomerSupport() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Ketik */}
         <div className="p-4 bg-white border-t border-gray-100 shrink-0">
           <form 
             onSubmit={(e) => { e.preventDefault(); handleSend(message); }}

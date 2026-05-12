@@ -39,7 +39,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
     e.preventDefault();
     setErrorMsg('');
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData)
@@ -68,7 +68,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
     }
 
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/register', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +95,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
     setErrorMsg('');
     try {
       // Mengirim Token JWT Google ke API Gateway
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/google-login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/google-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: credentialResponse.credential })

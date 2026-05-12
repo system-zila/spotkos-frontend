@@ -40,7 +40,7 @@ export function KotakMasuk() {
     }
 
     // 1. Konek ke WebSocket Backend
-    socketRef.current = io('${import.meta.env.VITE_API_URL}');
+    socketRef.current = io(`${import.meta.env.VITE_API_URL}`);
     
     // 2. Gabung ke "room" khusus menggunakan email pengguna
     socketRef.current.emit('join_room', user.email);
@@ -177,7 +177,7 @@ export function KotakMasuk() {
                 inboxList.map(chat => (
                   <button 
                     key={chat.id} 
-                    onClick={() => handleOpenChat(chat.email)}
+                    onClick={() => handleOpenChat(chat.id)}
                     className={`w-full text-left p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors ${activeChat === chat.id ? 'bg-orange-50/50 relative' : ''}`}
                   >
                     {activeChat === chat.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF6B35]"></div>}
