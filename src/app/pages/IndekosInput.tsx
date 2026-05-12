@@ -132,7 +132,7 @@ export function IndekosInput() {
       formData.append('ktp', ktpFile);
       formData.append('selfie', selfieFile);
 
-      const res = await fetch('${import.meta.env.VITE_API_URL}/api/users/verify-owner', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/verify-owner`, {
         method: 'PUT',
         body: formData
       });
@@ -197,7 +197,7 @@ export function IndekosInput() {
       
       photoFiles.forEach(file => formData.append('photos', file));
 
-      const res = await fetch('${import.meta.env.VITE_API_URL}/api/rooms/register', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms/register`, {
         method: 'POST',
         body: formData 
       });

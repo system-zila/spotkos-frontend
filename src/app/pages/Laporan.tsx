@@ -12,7 +12,7 @@ export function Laporan() {
   
   const [userTickets, setUserTickets] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState('');
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
 
   const fetchTickets = () => {
     if (user?.email) {
@@ -32,21 +32,24 @@ export function Laporan() {
   }, [user, navigate]);
 
   const handleReply = async (ticketId: string) => {
-    if (!replyText.trim() || !user) return;
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/reply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender: user.name, message: replyText })
-      });
-      if (response.ok) {
-        setReplyText('');
-        fetchTickets(); // Tarik data terbaru setelah membalas
-      }
-    } catch (error) {
-      alert('Gagal mengirim balasan.');
-    }
-  };
+  const text = replyTexts[ticketId];
+  if (!text || !text.trim()) return;
+
+  try {
+    // Pastikan menggunakan backtick (`)
+    await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender: user?.name, message: text })
+    });
+    
+    // Kosongkan hanya input pada tiket ini
+    setReplyTexts({ ...replyTexts, [ticketId]: '' }); 
+    // fetchTickets(); // (Opsional) Panggil ulang fungsi fetch Anda di sini jika ada
+  } catch (err) {
+    console.error("Gagal mengirim balasan", err);
+  }
+};
 
   const handleResolve = async (ticketId: string) => {
     if (!confirm('Apakah Anda yakin masalah ini sudah selesai?')) return;
@@ -146,8 +149,8 @@ export function Laporan() {
                             <div className="flex gap-2">
                               <input 
                                 type="text"
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
+                                value={replyTexts[ticket.id] || ''}
+                                onChange={(e) => setReplyTexts({ ...replyTexts, [ticket.id]: e.target.value })}
                                 placeholder="Ketik balasan untuk Admin..." 
                                 className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-[#FF6B35]"
                                 onKeyDown={(e) => e.key === 'Enter' && handleReply(ticket.id)}

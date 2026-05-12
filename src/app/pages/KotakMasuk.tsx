@@ -82,7 +82,7 @@ export function KotakMasuk() {
     setActiveChat(otherEmail);
     try {
       // Tandai pesan sebagai telah dibaca
-      await fetch('${import.meta.env.VITE_API_URL}/api/chats/read', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/chats/read`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ myEmail: user?.email, otherEmail })
@@ -117,7 +117,7 @@ export function KotakMasuk() {
     }
 
     try {
-      await fetch('${import.meta.env.VITE_API_URL}/api/chats/send', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/chats/send`, {
         method: 'POST',
         body: formData // Fetch otomatis atur header multipart/form-data
       });

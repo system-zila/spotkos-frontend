@@ -52,7 +52,7 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
 
     try {
       // 1. SIMPAN DATA KE MYSQL
-      const dbRes = await fetch('${import.meta.env.VITE_API_URL}/api/bookings', {
+      const dbRes = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -70,7 +70,7 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
       const invoiceId = dbData.id || dbData.invoiceId; 
 
       // 2. MINTA TOKEN MIDTRANS KE BACKEND
-      const tokenRes = await fetch('${import.meta.env.VITE_API_URL}/api/payment/create-transaction', {
+      const tokenRes = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/create-transaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

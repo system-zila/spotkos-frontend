@@ -188,7 +188,7 @@ export function ProfileSettings() {
       formData.append('avatar', file);
 
       try {
-        const res = await fetch('${import.meta.env.VITE_API_URL}/api/users/update-avatar', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/update-avatar`, {
           method: 'PUT',
           body: formData
         });
@@ -232,7 +232,7 @@ export function ProfileSettings() {
       formData.append('ktp', ktpFile);
       formData.append('selfie', selfieFile);
 
-      const res = await fetch('${import.meta.env.VITE_API_URL}/api/users/verify-owner', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/verify-owner`, {
         method: 'PUT',
         body: formData 
       });
@@ -252,7 +252,7 @@ export function ProfileSettings() {
   const submitWithdrawal = async () => {
     if (profile.balance <= 0) return;
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/withdrawals', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/withdrawals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user?.email, amount: profile.balance })
@@ -273,7 +273,7 @@ export function ProfileSettings() {
   const handleSaveField = async (field: string, value: string) => {
     if (!user?.email) return;
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/users/update-profile', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/update-profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user.email, field, value })
@@ -297,7 +297,7 @@ export function ProfileSettings() {
     } else if (phoneStep === 'otp') {
       if (otpInput.length < 4) return;
       try {
-        const response = await fetch('${import.meta.env.VITE_API_URL}/api/users/update-phone', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/update-phone`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: user?.email, phone: phoneInput })
@@ -331,7 +331,7 @@ export function ProfileSettings() {
 
     // 2. Kirim ke Database Backend
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/users/change-password', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/change-password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

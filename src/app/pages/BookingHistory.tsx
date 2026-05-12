@@ -95,7 +95,7 @@ export function BookingHistory() {
 
   const handlePayment = async (booking: BookingData) => {
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/payment/create-transaction', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payment/create-transaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

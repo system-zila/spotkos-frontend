@@ -72,7 +72,7 @@ export function CityDetail() {
     setSelectedFacilities([]);
     setPriceRange(0);
 
-    fetch('${import.meta.env.VITE_API_URL}/api/rooms')
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms`)
       .then(res => res.json())
       .then(data => {
         const mappedRooms = data.map((r: any) => ({
