@@ -28,7 +28,7 @@ export function CustomerSupport() {
   const fetchChats = async () => {
     if (!user?.email) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/support/chats?email=${user.email}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/support/chats?email=${user.email}`);
       const data = await res.json();
       setMessages(data);
     } catch (err) {
@@ -42,7 +42,7 @@ export function CustomerSupport() {
 
       // <-- TAMBAHAN: KONEKSI SOCKET UNTUK REAL-TIME CHAT
       if (!socketRef.current) {
-        socketRef.current = io('http://localhost:5000');
+        socketRef.current = io('${import.meta.env.VITE_API_URL}');
         socketRef.current.on('new_support_chat', () => {
           fetchChats(); // Tarik pesan admin baru otomatis tanpa refresh
         });
@@ -66,7 +66,7 @@ export function CustomerSupport() {
   const saveMessageToDB = async (sender: string, text: string) => {
     if (!user?.email) return;
     try {
-      await fetch('http://localhost:5000/api/support/chats', {
+      await fetch('${import.meta.env.VITE_API_URL}/api/support/chats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user.email, sender, message: text })

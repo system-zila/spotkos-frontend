@@ -62,13 +62,13 @@ export function RoomDetail() {
     window.scrollTo(0, 0);
     
     // Pertama, tarik semua kos untuk list 'Kost Serupa'
-    fetch(`http://localhost:5000/api/rooms`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms`)
       .then(res => res.json())
       .then(data => setAllRooms(data))
       .catch(err => console.error("Gagal menarik data semua kos:", err));
 
     // Kedua, tarik kos ini SECARA SPESIFIK 
-    fetch(`http://localhost:5000/api/rooms/${id}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}`)
       .then(res => res.json())
       .then(data => {
         setRoom(data);
@@ -80,7 +80,7 @@ export function RoomDetail() {
       });
 
     // Ketiga, tarik ulasan spesifik
-    fetch(`http://localhost:5000/api/rooms/${id}/reviews`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}/reviews`)
       .then(res => {
          if(!res.ok) throw new Error("API ulasan error");
          return res.json();
@@ -119,7 +119,7 @@ export function RoomDetail() {
   let ruleList: string[] = [];
   try { ruleList = JSON.parse(room.rules || '[]'); } catch(e) { ruleList = [room.rules]; }
 
-  const mainPhoto = photoGallery.length > 0 ? `http://localhost:5000/${photoGallery[0]}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800';
+  const mainPhoto = photoGallery.length > 0 ? `${import.meta.env.VITE_API_URL}/${photoGallery[0]}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800';
 
   // --- PENENTUAN KOORDINAT PETA ---
   // Jika database memiliki titik koordinat aktual, gunakan. Jika tidak, gunakan Monas sebagai fallback.
@@ -189,7 +189,7 @@ export function RoomDetail() {
             <div className="hidden md:flex flex-col gap-4 h-full">
               {photoGallery.slice(1, 3).map((img, idx) => (
                 <div key={idx} className="flex-1 rounded-[32px] overflow-hidden bg-gray-100">
-                  <img src={`http://localhost:5000/${img}`} alt={`Foto ${idx+2}`} className="w-full h-full object-cover" />
+                  <img src={`${import.meta.env.VITE_API_URL}/${img}`} alt={`Foto ${idx+2}`} className="w-full h-full object-cover" />
                 </div>
               ))}
               {photoGallery.length <= 1 && (
@@ -474,7 +474,8 @@ export function RoomDetail() {
                         }
 
                         try {
-                          await fetch('http://localhost:5000/api/chats/initiate', {
+                          // PERHATIKAN: Gunakan backtick (`) murni, buang tanda \ di depan $
+                          await fetch(`${import.meta.env.VITE_API_URL}/api/chats/initiate`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
@@ -513,7 +514,7 @@ export function RoomDetail() {
                 {similarRooms.map((simRoom: any) => {
                   let sFac: string[] = [];
                   try { sFac = JSON.parse(simRoom.facilities || '[]'); } catch(e) { sFac = []; }
-                  const sImg = simRoom.image ? `http://localhost:5000/${simRoom.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400';
+                  const sImg = simRoom.image ? `${import.meta.env.VITE_API_URL}/${simRoom.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400';
                   
                   return (
                     <div key={simRoom.id} className="group bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300">

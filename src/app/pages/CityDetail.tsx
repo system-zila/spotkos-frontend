@@ -72,7 +72,7 @@ export function CityDetail() {
     setSelectedFacilities([]);
     setPriceRange(0);
 
-    fetch('http://localhost:5000/api/rooms')
+    fetch('${import.meta.env.VITE_API_URL}/api/rooms')
       .then(res => res.json())
       .then(data => {
         const mappedRooms = data.map((r: any) => ({
@@ -84,7 +84,7 @@ export function CityDetail() {
           rating: parseFloat(r.rating) || 0,
           reviews: parseInt(r.reviews_count) || 0,
           gender: r.gender,
-          image: r.image ? `http://localhost:5000/${r.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400',
+          image: r.image ? `${import.meta.env.VITE_API_URL}/${r.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400',
           facilities: typeof r.facilities === 'string' ? JSON.parse(r.facilities || '[]') : r.facilities || [],
           sisaKamar: parseInt(r.sisa_kamar) || 0,
           totalKamar: parseInt(r.total_kamar) || 0,

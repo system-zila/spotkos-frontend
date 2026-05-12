@@ -16,7 +16,7 @@ export function Laporan() {
 
   const fetchTickets = () => {
     if (user?.email) {
-      fetch(`http://localhost:5000/api/tickets/user?email=${user.email}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/tickets/user?email=${user.email}`)
         .then(res => res.json())
         .then(data => setUserTickets(data))
         .catch(err => console.error(err));
@@ -34,7 +34,7 @@ export function Laporan() {
   const handleReply = async (ticketId: string) => {
     if (!replyText.trim() || !user) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/reply`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender: user.name, message: replyText })
@@ -51,7 +51,7 @@ export function Laporan() {
   const handleResolve = async (ticketId: string) => {
     if (!confirm('Apakah Anda yakin masalah ini sudah selesai?')) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'resolved' })

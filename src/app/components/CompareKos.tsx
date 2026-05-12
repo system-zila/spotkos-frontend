@@ -15,13 +15,13 @@ export function CompareKos() {
 
   // MENGAMBIL DATA KOS DARI DATABASE
   useEffect(() => {
-    fetch('http://localhost:5000/api/rooms')
+    fetch('${import.meta.env.VITE_API_URL}/api/rooms')
       .then(res => res.json())
       .then(data => {
         const parsed = data.map((r: any) => ({
           ...r,
           // FIX: Injeksi URL Backend ke path gambar agar terbaca di browser
-          image: r.image ? `http://localhost:5000/${r.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400',
+          image: r.image ? `${import.meta.env.VITE_API_URL}/${r.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400',
           images: typeof r.images === 'string' ? JSON.parse(r.images) : r.images || [],
           facilities: typeof r.facilities === 'string' ? JSON.parse(r.facilities) : r.facilities || [],
           roomDetails: typeof r.roomDetails === 'string' ? JSON.parse(r.roomDetails) : r.roomDetails || {},

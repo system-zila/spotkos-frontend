@@ -40,7 +40,7 @@ export function KotakMasuk() {
     }
 
     // 1. Konek ke WebSocket Backend
-    socketRef.current = io('http://localhost:5000');
+    socketRef.current = io('${import.meta.env.VITE_API_URL}');
     
     // 2. Gabung ke "room" khusus menggunakan email pengguna
     socketRef.current.emit('join_room', user.email);
@@ -59,7 +59,7 @@ export function KotakMasuk() {
 
   const fetchInbox = () => {
     if (!user?.email) return;
-    fetch(`http://localhost:5000/api/chats/kotak-masuk?email=${user.email}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/chats/kotak-masuk?email=${user.email}`)
       .then(res => res.json())
       .then(data => {
         setInboxList(data);
@@ -82,7 +82,7 @@ export function KotakMasuk() {
     setActiveChat(otherEmail);
     try {
       // Tandai pesan sebagai telah dibaca
-      await fetch('http://localhost:5000/api/chats/read', {
+      await fetch('${import.meta.env.VITE_API_URL}/api/chats/read', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ myEmail: user?.email, otherEmail })
@@ -117,7 +117,7 @@ export function KotakMasuk() {
     }
 
     try {
-      await fetch('http://localhost:5000/api/chats/send', {
+      await fetch('${import.meta.env.VITE_API_URL}/api/chats/send', {
         method: 'POST',
         body: formData // Fetch otomatis atur header multipart/form-data
       });
@@ -234,9 +234,9 @@ export function KotakMasuk() {
                           {msg.image && (
                             <div className="mb-2">
                               <img 
-                                src={`http://localhost:5000/${msg.image}`} 
+                                src={`${import.meta.env.VITE_API_URL}/${msg.image}`} 
                                 alt="Attachment" 
-                                onClick={() => setFullscreenImage(`http://localhost:5000/${msg.image}`)}
+                                onClick={() => setFullscreenImage(`${import.meta.env.VITE_API_URL}/${msg.image}`)}
                                 className="max-w-[200px] max-h-[250px] object-cover rounded-xl border border-white/20 cursor-pointer hover:opacity-90 hover:scale-[1.02] transition-all duration-200" 
                               />
                             </div>

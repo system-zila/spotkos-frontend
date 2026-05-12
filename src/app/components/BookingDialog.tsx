@@ -52,7 +52,7 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
 
     try {
       // 1. SIMPAN DATA KE MYSQL
-      const dbRes = await fetch('http://localhost:5000/api/bookings', {
+      const dbRes = await fetch('${import.meta.env.VITE_API_URL}/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -70,7 +70,7 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
       const invoiceId = dbData.id || dbData.invoiceId; 
 
       // 2. MINTA TOKEN MIDTRANS KE BACKEND
-      const tokenRes = await fetch('http://localhost:5000/api/payment/create-transaction', {
+      const tokenRes = await fetch('${import.meta.env.VITE_API_URL}/api/payment/create-transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,7 +94,7 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
           // @ts-ignore
           window.snap.pay(data.token, {
             onSuccess: async function () {
-              await fetch(`http://localhost:5000/api/bookings/${invoiceId}/status`, {
+              await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/${invoiceId}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'paid', roomId: room.id, floorName: selectedFloor })
@@ -105,7 +105,7 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
               window.location.href = '/booking-history';
             },
             onError: async function () {
-              await fetch(`http://localhost:5000/api/bookings/${invoiceId}/status`, {
+              await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/${invoiceId}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'failed' })
@@ -113,7 +113,7 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
               window.location.href = '/booking-history';
             },
             onClose: async function () {
-              await fetch(`http://localhost:5000/api/bookings/${invoiceId}/status`, {
+              await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/${invoiceId}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'failed' })

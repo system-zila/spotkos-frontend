@@ -50,7 +50,7 @@ export function Navigation() {
   useEffect(() => {
     if (loggedInUser?.email) {
       // 1. Ambil data unread messages
-      fetch(`http://localhost:5000/api/chats/kotak-masuk?email=${loggedInUser.email}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/chats/kotak-masuk?email=${loggedInUser.email}`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -61,14 +61,14 @@ export function Navigation() {
         .catch(err => console.error("Gagal cek unread pesan:", err));
 
       // 2. Ambil data avatar pengguna dari profil
-      fetch(`http://localhost:5000/api/users/profile?email=${loggedInUser.email}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/users/profile?email=${loggedInUser.email}`)
         .then(res => res.json())
         .then(data => {
           if (data?.avatar && typeof data.avatar === 'string') {
             if (data.avatar.startsWith('http')) {
               setUserAvatar(data.avatar); 
             } else {
-              setUserAvatar(`http://localhost:5000/${data.avatar}`); 
+              setUserAvatar(`${import.meta.env.VITE_API_URL}/${data.avatar}`); 
             }
           } // <--- KURUNG KURAWAL INI YANG SEBELUMNYA HILANG
         })

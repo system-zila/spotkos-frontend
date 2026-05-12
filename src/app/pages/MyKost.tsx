@@ -27,7 +27,7 @@ export function MyKost() {
 
   useEffect(() => {
     if (user?.email) {
-      fetch(`http://localhost:5000/api/rooms/my-kosts?email=${user.email}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/rooms/my-kosts?email=${user.email}`)
         .then(res => res.json())
         .then(data => {
           if (!data.error) setMyKosts(data);
@@ -79,7 +79,7 @@ export function MyKost() {
             {myKosts.map((kost) => {
               const isExpanded = expandedId === kost.id;
               // Mengambil gambar dari backend, jika kosong pakai fallback
-              const mainPhoto = kost.image ? `http://localhost:5000/${kost.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400';
+              const mainPhoto = kost.image ? `${import.meta.env.VITE_API_URL}/${kost.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400';
 
               return (
                 <div key={kost.id} className="bg-white rounded-[24px] border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">

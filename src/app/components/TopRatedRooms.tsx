@@ -16,7 +16,7 @@ export function TopRatedRooms({ filters }: TopRatedRoomsProps) {
 
   // MENGAMBIL DATA KOS DARI MYSQL (DENGAN FORMAT API BARU)
   useEffect(() => {
-    fetch('http://localhost:5000/api/rooms')
+    fetch('${import.meta.env.VITE_API_URL}/api/rooms')
       .then(res => res.json())
       .then(data => {
         // Pemetaan data yang disesuaikan dengan query API baru
@@ -29,7 +29,7 @@ export function TopRatedRooms({ filters }: TopRatedRoomsProps) {
           rating: parseFloat(room.rating) || 0,
           gender: room.gender,
           // Tangkap URL gambar dengan prefix localhost
-          image: room.image ? `http://localhost:5000/${room.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400',
+          image: room.image ? `${import.meta.env.VITE_API_URL}/${room.image}` : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400',
           facilities: typeof room.facilities === 'string' ? JSON.parse(room.facilities || '[]') : room.facilities || [],
           // Tangkap hasil kalkulasi kamar dari backend
           sisaKamar: parseInt(room.sisa_kamar) || 0,

@@ -19,7 +19,7 @@ export function ArticleDetail() {
     window.scrollTo(0, 0);
     setIsLoading(true);
 
-    fetch('http://localhost:5000/api/articles')
+    fetch('${import.meta.env.VITE_API_URL}/api/articles')
       .then(res => res.json())
       .then(data => {
         // Karena MySQL mengembalikan string JSON untuk kolom 'content', 

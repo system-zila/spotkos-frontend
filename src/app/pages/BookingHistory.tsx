@@ -49,7 +49,7 @@ export function BookingHistory() {
 
   const fetchBookings = () => {
     if (user?.email) {
-      fetch(`http://localhost:5000/api/bookings/user?email=${user.email}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/bookings/user?email=${user.email}`)
         .then(res => res.json())
         .then(data => {
           const parsedBookings: BookingData[] = data.map((b: any) => {
@@ -95,7 +95,7 @@ export function BookingHistory() {
 
   const handlePayment = async (booking: BookingData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/payment/create-transaction', {
+      const response = await fetch('${import.meta.env.VITE_API_URL}/api/payment/create-transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -112,7 +112,7 @@ export function BookingHistory() {
         (window as any).snap.pay(data.token, {
           onSuccess: async function() {
             try {
-              await fetch(`http://localhost:5000/api/bookings/${booking.id}/status`, {
+              await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/${booking.id}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -143,7 +143,7 @@ export function BookingHistory() {
     if(!reviewBooking) return;
     setIsSubmittingReview(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/rooms/${reviewBooking.roomId}/reviews`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${reviewBooking.roomId}/reviews`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -106,21 +106,21 @@ export function AdminPanel() {
 
   // ===================== FETCHING =====================
   const fetchVerifications = () => {
-    fetch('http://localhost:5000/api/admin/verifications')
+    fetch(`${import.meta.env.VITE_API_URL}/api/admin/verifications`)
       .then(res => res.json())
       .then(data => setVerifications(data))
       .catch(err => console.error(err));
   };
 
   const fetchWithdrawals = () => {
-    fetch('http://localhost:5000/api/admin/withdrawals')
+    fetch(`${import.meta.env.VITE_API_URL}/api/admin/withdrawals`)
       .then(res => res.json())
       .then(data => setWithdrawalsData(data))
       .catch(err => console.error(err));
   };
 
   const fetchSupportChats = () => {
-    fetch('http://localhost:5000/api/admin/support/chats')
+    fetch(`${import.meta.env.VITE_API_URL}/api/admin/support/chats`)
       .then(res => res.json())
       .then(data => setSupportChats(data))
       .catch(err => console.error(err));
@@ -131,14 +131,14 @@ export function AdminPanel() {
       fetchVerifications();
       fetchWithdrawals();
       fetchSupportChats();
-      fetch('http://localhost:5000/api/rooms').then(res => res.json()).then(data => setRoomsData(data)).catch(err => console.error(err));
-      fetch('http://localhost:5000/api/users').then(res => res.json()).then(data => setUsersData(data)).catch(err => console.error(err));
-      fetch('http://localhost:5000/api/admin/transactions').then(res => res.json()).then(data => setTransactionsData(data)).catch(err => console.error(err));
-      fetch('http://localhost:5000/api/articles').then(res => res.json()).then(data => setArticlesData(data)).catch(err => console.error(err));
-      fetch('http://localhost:5000/api/tickets').then(res => res.json()).then(data => setTickets(data)).catch(err => console.error(err));
+      fetch(`${import.meta.env.VITE_API_URL}/api/rooms`).then(res => res.json()).then(data => setRoomsData(data)).catch(err => console.error(err));
+      fetch(`${import.meta.env.VITE_API_URL}/api/users`).then(res => res.json()).then(data => setUsersData(data)).catch(err => console.error(err));
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/transactions`).then(res => res.json()).then(data => setTransactionsData(data)).catch(err => console.error(err));
+      fetch(`${import.meta.env.VITE_API_URL}/api/articles`).then(res => res.json()).then(data => setArticlesData(data)).catch(err => console.error(err));
+      fetch(`${import.meta.env.VITE_API_URL}/api/tickets`).then(res => res.json()).then(data => setTickets(data)).catch(err => console.error(err));
 
       // Koneksi WebSocket khusus untuk Notifikasi Real-time
-      socketRef.current = io('http://localhost:5000');
+      socketRef.current = io(import.meta.env.VITE_API_URL);
       
       // Mendengarkan sinyal dari request penarikan baru
       socketRef.current.on('admin_withdrawal_update', () => {
@@ -232,7 +232,7 @@ export function AdminPanel() {
     setLoginError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/admin/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -260,7 +260,7 @@ export function AdminPanel() {
 
   const handleVerifyAction = async (email: string, action: 'approved' | 'rejected') => {
     try {
-      const res = await fetch('http://localhost:5000/api/admin/verifications/action', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/verifications/action`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, action })
@@ -279,7 +279,7 @@ export function AdminPanel() {
 
   const handleWithdrawalAction = async (id: string, action: 'approved' | 'rejected') => {
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/withdrawals/${id}/status`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/withdrawals/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: action })
@@ -299,7 +299,7 @@ export function AdminPanel() {
     if (!replyText.trim()) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/reply`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender: 'Admin SpotKos', message: replyText })
@@ -327,7 +327,7 @@ export function AdminPanel() {
 
   const handleResolve = async (ticketId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'resolved' })
@@ -350,7 +350,7 @@ export function AdminPanel() {
     const newStatus = userToUpdate.status === 'active' ? 'suspended' : 'active';
 
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${id}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -673,7 +673,7 @@ export function AdminPanel() {
                             <div>
                               <span className="text-gray-600 text-sm font-bold block mb-2">Foto KTP Asli</span>
                               <div className="bg-white rounded-xl overflow-hidden border border-gray-200 h-48 flex items-center justify-center relative shadow-sm">
-                                {ver.ktp_image ? (<img src={`http://localhost:5000/${ver.ktp_image}`} alt="KTP" className="w-full h-full object-contain" />
+                                {ver.ktp_image ? (<img src={`${import.meta.env.VITE_API_URL}/${ver.ktp_image}`} alt="KTP" className="w-full h-full object-contain" />
                                 ) : <span className="text-gray-400">Tidak ada gambar</span>}
                               </div>
                             </div>
@@ -681,7 +681,7 @@ export function AdminPanel() {
                               <span className="text-gray-600 text-sm font-bold block mb-2">Foto Selfie dgn KTP</span>
                               <div className="bg-white rounded-xl overflow-hidden border border-gray-200 h-48 flex items-center justify-center relative shadow-sm">
                                 {ver.selfie_image ? (
-                                  <img src={`http://localhost:5000/${ver.selfie_image}`} alt="Selfie" className="w-full h-full object-contain" />
+                                  <img src={`${import.meta.env.VITE_API_URL}/${ver.selfie_image}`} alt="Selfie" className="w-full h-full object-contain" />
                                 ) : <span className="text-gray-400">Tidak ada gambar</span>}
                               </div>
                             </div>
@@ -939,7 +939,7 @@ export function AdminPanel() {
                           e.preventDefault();
                           if (!chatReply.trim()) return;
                           try {
-                            await fetch('http://localhost:5000/api/support/chats', {
+                            await fetch(`${import.meta.env.VITE_API_URL}/api/support/chats`, {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ email: activeChatEmail, sender: 'admin', message: chatReply })
@@ -1245,7 +1245,7 @@ export function AdminPanel() {
 
                             try {
                               if (editingArticleId) {
-                                await fetch(`http://localhost:5000/api/articles/${editingArticleId}`, {
+                                await fetch(`${import.meta.env.VITE_API_URL}/api/articles/${editingArticleId}`, {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify(articleData)
@@ -1253,7 +1253,7 @@ export function AdminPanel() {
                                 setArticlesData((prev) => prev.map((a) => a.id === editingArticleId ? { ...articleData, id: editingArticleId, date: a.date } : a));
                                 showToast('Perubahan artikel berhasil disimpan!');
                               } else {
-                                const response = await fetch('http://localhost:5000/api/articles', {
+                                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/articles`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify(articleData)

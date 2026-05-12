@@ -111,14 +111,14 @@ export function ProfileSettings() {
 
   const fetchProfile = () => {
     if (user?.email) {
-      fetch(`http://localhost:5000/api/users/profile?email=${user.email}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/users/profile?email=${user.email}`)
         .then(res => res.json())
         .then(data => {
           if (!data.error) setProfile((prev: any) => ({ ...prev, ...data }));
         })
         .catch(err => console.error("Gagal menarik profil:", err));
 
-      fetch(`http://localhost:5000/api/rooms/my-kosts?email=${user.email}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/rooms/my-kosts?email=${user.email}`)
         .then(res => res.json())
         .then(data => {
           if (!data.error) setMyKosts(data);
@@ -188,7 +188,7 @@ export function ProfileSettings() {
       formData.append('avatar', file);
 
       try {
-        const res = await fetch('http://localhost:5000/api/users/update-avatar', {
+        const res = await fetch('${import.meta.env.VITE_API_URL}/api/users/update-avatar', {
           method: 'PUT',
           body: formData
         });
@@ -232,7 +232,7 @@ export function ProfileSettings() {
       formData.append('ktp', ktpFile);
       formData.append('selfie', selfieFile);
 
-      const res = await fetch('http://localhost:5000/api/users/verify-owner', {
+      const res = await fetch('${import.meta.env.VITE_API_URL}/api/users/verify-owner', {
         method: 'PUT',
         body: formData 
       });
@@ -252,7 +252,7 @@ export function ProfileSettings() {
   const submitWithdrawal = async () => {
     if (profile.balance <= 0) return;
     try {
-      const response = await fetch('http://localhost:5000/api/withdrawals', {
+      const response = await fetch('${import.meta.env.VITE_API_URL}/api/withdrawals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user?.email, amount: profile.balance })
@@ -273,7 +273,7 @@ export function ProfileSettings() {
   const handleSaveField = async (field: string, value: string) => {
     if (!user?.email) return;
     try {
-      const response = await fetch('http://localhost:5000/api/users/update-profile', {
+      const response = await fetch('${import.meta.env.VITE_API_URL}/api/users/update-profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user.email, field, value })
@@ -297,7 +297,7 @@ export function ProfileSettings() {
     } else if (phoneStep === 'otp') {
       if (otpInput.length < 4) return;
       try {
-        const response = await fetch('http://localhost:5000/api/users/update-phone', {
+        const response = await fetch('${import.meta.env.VITE_API_URL}/api/users/update-phone', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: user?.email, phone: phoneInput })
@@ -331,7 +331,7 @@ export function ProfileSettings() {
 
     // 2. Kirim ke Database Backend
     try {
-      const response = await fetch('http://localhost:5000/api/users/change-password', {
+      const response = await fetch('${import.meta.env.VITE_API_URL}/api/users/change-password', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -389,7 +389,7 @@ export function ProfileSettings() {
                 <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
                   {profile.avatar ? (
                     <img 
-                      src={profile?.avatar?.startsWith('http') ? profile.avatar : `http://localhost:5000/${profile.avatar}`}
+                      src={profile?.avatar?.startsWith('http') ? profile.avatar : `${import.meta.env.VITE_API_URL}/${profile.avatar}`}
                       alt="Avatar" 
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
@@ -814,7 +814,7 @@ export function ProfileSettings() {
                       <div key={i} className="flex gap-4 p-4 border border-gray-200 rounded-2xl hover:border-[#FF6B35]/50 transition-colors bg-white shadow-sm hover:shadow-md">
                         <div className="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
                           {kos.image ? (
-                            <img src={`http://localhost:5000/${kos.image}`} alt={kos.name} className="w-full h-full object-cover" />
+                            <img src={`${import.meta.env.VITE_API_URL}/${kos.image}`} alt={kos.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-400"><Building className="w-8 h-8" /></div>
                           )}

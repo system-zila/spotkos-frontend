@@ -8,7 +8,7 @@ export function BlogSection() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/articles')
+    fetch('${import.meta.env.VITE_API_URL}/api/articles')
       .then(res => res.json())
       .then(data => {
         // Hanya mengambil 4 artikel terbaru untuk ditampilkan di Beranda
