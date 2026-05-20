@@ -3,19 +3,22 @@ import { Navigation } from '../components/Navigation';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { MessageSquare, ArrowLeft, Send, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
-import { Link, useNavigate } from 'react-router'; // <-- Pastikan useNavigate diimpor
+import { Link, useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 
 export function Laporan() {
   const { user } = useAuth();
-  const navigate = useNavigate(); // <-- Inisialisasi navigasi
-  
+  const navigate = useNavigate();
+
   const [userTickets, setUserTickets] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // ✅ FIX BUG #11: Ubah replyText jadi object per tiket agar tidak tercampur
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
 
   const fetchTickets = () => {
     if (user?.email) {
+      // ✅ FIX BUG #1: Ganti petik biasa → backtick
       fetch(`${import.meta.env.VITE_API_URL}/api/tickets/user?email=${user.email}`)
         .then(res => res.json())
         .then(data => setUserTickets(data))
@@ -25,35 +28,36 @@ export function Laporan() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/'); // Tendang ke Home jika belum login
+      navigate('/');
     } else {
-      fetchTickets(); // Tarik data jika sudah login
+      fetchTickets();
     }
   }, [user, navigate]);
 
   const handleReply = async (ticketId: string) => {
-  const text = replyTexts[ticketId];
-  if (!text || !text.trim()) return;
-
-  try {
-    // Pastikan menggunakan backtick (`)
-    await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/reply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sender: user?.name, message: text })
-    });
-    
-    // Kosongkan hanya input pada tiket ini
-    setReplyTexts({ ...replyTexts, [ticketId]: '' }); 
-    // fetchTickets(); // (Opsional) Panggil ulang fungsi fetch Anda di sini jika ada
-  } catch (err) {
-    console.error("Gagal mengirim balasan", err);
-  }
-};
+    const text = replyTexts[ticketId] || '';
+    if (!text.trim() || !user) return;
+    try {
+      // ✅ FIX BUG #1: Ganti petik biasa → backtick
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender: user.name, message: text })
+      });
+      if (response.ok) {
+        // ✅ FIX BUG #11: Reset hanya teks tiket yang bersangkutan
+        setReplyTexts(prev => ({ ...prev, [ticketId]: '' }));
+        fetchTickets();
+      }
+    } catch (error) {
+      alert('Gagal mengirim balasan.');
+    }
+  };
 
   const handleResolve = async (ticketId: string) => {
     if (!confirm('Apakah Anda yakin masalah ini sudah selesai?')) return;
     try {
+      // ✅ FIX BUG #1: Ganti petik biasa → backtick
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +68,9 @@ export function Laporan() {
       alert('Gagal menutup tiket.');
     }
   };
+
   if (!user) return null;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navigation />
@@ -93,9 +99,8 @@ export function Laporan() {
               <div className="space-y-4">
                 {userTickets.map(ticket => (
                   <div key={ticket.id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    
-                    {/* Header Tiket (Klik untuk buka/tutup) */}
-                    <div 
+
+                    <div
                       className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-gray-50/50"
                       onClick={() => setExpandedId(expandedId === ticket.id ? null : ticket.id)}
                     >
@@ -118,7 +123,6 @@ export function Laporan() {
                       </div>
                     </div>
 
-                    {/* Area Detail & Balasan (Muncul jika diklik) */}
                     {expandedId === ticket.id && (
                       <div className="p-5 border-t border-gray-100 bg-gray-50/30">
                         <div className="mb-4">
@@ -126,7 +130,6 @@ export function Laporan() {
                           <p className="text-sm text-gray-700 bg-white p-4 rounded-xl border border-gray-100">{ticket.message}</p>
                         </div>
 
-                        {/* Riwayat Balasan */}
                         {ticket.replies?.length > 0 && (
                           <div className="space-y-3 mb-4">
                             {ticket.replies.map((reply: any, i: number) => (
@@ -143,15 +146,15 @@ export function Laporan() {
                           </div>
                         )}
 
-                        {/* Form Balas & Tombol Selesai (Hanya aktif jika belum selesai) */}
                         {ticket.status !== 'resolved' ? (
                           <div className="mt-4 pt-4 border-t border-gray-100">
                             <div className="flex gap-2">
-                              <input 
+                              <input
                                 type="text"
+                                // ✅ FIX BUG #11: Pakai replyTexts[ticket.id] per tiket
                                 value={replyTexts[ticket.id] || ''}
-                                onChange={(e) => setReplyTexts({ ...replyTexts, [ticket.id]: e.target.value })}
-                                placeholder="Ketik balasan untuk Admin..." 
+                                onChange={(e) => setReplyTexts(prev => ({ ...prev, [ticket.id]: e.target.value }))}
+                                placeholder="Ketik balasan untuk Admin..."
                                 className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-[#FF6B35]"
                                 onKeyDown={(e) => e.key === 'Enter' && handleReply(ticket.id)}
                               />

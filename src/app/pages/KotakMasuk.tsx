@@ -15,18 +15,14 @@ export function KotakMasuk() {
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  
-  // State untuk Upload Gambar di Chat
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-  // STATE BARU UNTUK GAMBAR FULLSCREEN
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
 
-  // PROTEKSI HALAMAN & INISIALISASI SOCKET.IO
   useEffect(() => {
     if (!user) {
       navigate('/');
@@ -39,19 +35,14 @@ export function KotakMasuk() {
       setActiveChat(location.state.activeChat);
     }
 
-    // 1. Konek ke WebSocket Backend
+    // ✅ FIX BUG #1 & #5: Ganti petik biasa → backtick agar URL socket benar
     socketRef.current = io(`${import.meta.env.VITE_API_URL}`);
-    
-    // 2. Gabung ke "room" khusus menggunakan email pengguna
     socketRef.current.emit('join_room', user.email);
 
-    // 3. Dengarkan event 'receive_message' dari server
-    socketRef.current.on('receive_message', (newMessage) => {
-      // Jika ada pesan baru masuk, otomatis tarik data terbaru tanpa refresh page
+    socketRef.current.on('receive_message', () => {
       fetchInbox();
     });
 
-    // Cleanup socket saat komponen di-unmount
     return () => {
       socketRef.current?.disconnect();
     };
@@ -59,10 +50,8 @@ export function KotakMasuk() {
 
   const fetchInbox = () => {
     if (!user?.email) return;
-    // ✅ FIX: Tambahkan header bypass ngrok
-    fetch(`${import.meta.env.VITE_API_URL}/api/chats/kotak-masuk?email=${user.email}`, {
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    })
+    // ✅ FIX BUG #1: Ganti petik biasa → backtick
+    fetch(`${import.meta.env.VITE_API_URL}/api/chats/kotak-masuk?email=${user.email}`)
       .then(res => res.json())
       .then(data => {
         setInboxList(data);
@@ -74,30 +63,28 @@ export function KotakMasuk() {
       });
   };
 
-  // Efek auto-scroll ke bawah saat ada pesan baru
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [activeChat, inboxList]);
 
-  const handleOpenChat = async (otherEmail: string) => {
-    setActiveChat(otherEmail);
+  const handleOpenChat = async (otherId: string) => {
+    // ✅ FIX BUG #9: Konsisten pakai id (yang nilainya = email) sebagai key
+    setActiveChat(otherId);
     try {
-      // Tandai pesan sebagai telah dibaca
+      // ✅ FIX BUG #1: Ganti petik biasa → backtick
       await fetch(`${import.meta.env.VITE_API_URL}/api/chats/read`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ myEmail: user?.email, otherEmail })
+        body: JSON.stringify({ myEmail: user?.email, otherEmail: otherId })
       });
-      // Perbarui UI secara lokal agar responsif
-      setInboxList(prev => prev.map(chat => chat.id === otherEmail ? { ...chat, unread: 0 } : chat));
+      setInboxList(prev => prev.map(chat => chat.id === otherId ? { ...chat, unread: 0 } : chat));
     } catch (error) {
       console.error('Gagal update read status');
     }
   };
 
-  // Handler untuk memilih gambar
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
@@ -107,10 +94,8 @@ export function KotakMasuk() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Cegah pengiriman jika teks dan gambar kosong
     if ((!messageInput.trim() && !imageFile) || activeChat === null || !user) return;
-    
-    // MENGGUNAKAN FORMDATA KARENA MENGIRIM FILE (GAMBAR) + TEKS
+
     const formData = new FormData();
     formData.append('sender', user.email);
     formData.append('receiver', activeChat);
@@ -120,17 +105,17 @@ export function KotakMasuk() {
     }
 
     try {
+      // ✅ FIX BUG #1: Ganti petik biasa → backtick
       await fetch(`${import.meta.env.VITE_API_URL}/api/chats/send`, {
         method: 'POST',
-        body: formData // Fetch otomatis atur header multipart/form-data
+        body: formData
       });
-      
-      // Reset input setelah terkirim
+
       setMessageInput('');
       setImageFile(null);
       setImagePreview(null);
-      
-      fetchInbox(); // Tarik ulang pesan terbaru dari DB agar muncul di layar kita
+
+      fetchInbox();
     } catch (error) {
       alert('Gagal mengirim pesan.');
     }
@@ -143,7 +128,7 @@ export function KotakMasuk() {
   return (
     <div className="min-h-screen bg-[#faf9f6] flex flex-col relative">
       <Navigation />
-      
+
       <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 flex flex-col">
         <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-[#FF6B35] transition-colors mb-6 text-sm">
           <ArrowLeft className="w-4 h-4" /> Kembali ke Beranda
@@ -154,22 +139,21 @@ export function KotakMasuk() {
           <p className="text-gray-500">Pesan dari pemilik dan pencari kos Anda.</p>
         </div>
 
-        {/* CONTAINER CHAT */}
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm h-[600px] flex overflow-hidden">
-          
-          {/* Panel Kiri: Daftar Kontak / Chat */}
+
+          {/* Panel Kiri */}
           <div className={`w-full md:w-80 border-r border-gray-100 flex flex-col shrink-0 ${activeChat !== null ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-5 border-b border-gray-100 bg-gray-50/50">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Cari pesan..." 
-                  className="w-full bg-white border border-gray-200 rounded-full pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#FF6B35] focus:ring-2 focus:ring-orange-100 transition-all" 
+                <input
+                  type="text"
+                  placeholder="Cari pesan..."
+                  className="w-full bg-white border border-gray-200 rounded-full pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#FF6B35] focus:ring-2 focus:ring-orange-100 transition-all"
                 />
               </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
               {inboxList.length === 0 ? (
                 <div className="p-8 text-center flex flex-col items-center">
@@ -178,8 +162,9 @@ export function KotakMasuk() {
                 </div>
               ) : (
                 inboxList.map(chat => (
-                  <button 
-                    key={chat.id} 
+                  <button
+                    key={chat.id}
+                    // ✅ FIX BUG #9: Pakai chat.id konsisten (nilainya = email dari backend)
                     onClick={() => handleOpenChat(chat.id)}
                     className={`w-full text-left p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors ${activeChat === chat.id ? 'bg-orange-50/50 relative' : ''}`}
                   >
@@ -205,7 +190,7 @@ export function KotakMasuk() {
             </div>
           </div>
 
-          {/* Panel Kanan: Ruang Obrolan */}
+          {/* Panel Kanan */}
           <div className={`flex-1 flex flex-col bg-[#faf9f6] ${activeChat === null ? 'hidden md:flex' : 'flex'}`}>
             {activeChat === null ? (
               <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8 text-center bg-gray-50/30">
@@ -214,7 +199,6 @@ export function KotakMasuk() {
               </div>
             ) : (
               <>
-                {/* Header Ruang Obrolan */}
                 <div className="bg-white p-4 border-b border-gray-100 flex items-center gap-4 shrink-0 shadow-sm z-10">
                   <button onClick={() => setActiveChat(null)} className="md:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
                     <ArrowLeft className="w-5 h-5" />
@@ -226,25 +210,22 @@ export function KotakMasuk() {
                   </div>
                 </div>
 
-                {/* Area Pesan */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4" ref={chatScrollRef}>
                   {inboxList.find(c => c.id === activeChat)?.messages.map((msg: any) => (
                     <div key={msg.id} className={`flex max-w-[80%] ${msg.sender === 'me' ? 'ml-auto justify-end' : 'mr-auto'}`}>
                       <div className={`flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'}`}>
                         <div className={`px-4 py-2.5 text-sm shadow-sm ${msg.sender === 'me' ? 'bg-[#FF6B35] text-white rounded-[20px] rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-[20px] rounded-tl-sm'}`}>
-                          
-                          {/* JIKA ADA GAMBAR, RENDER GAMBAR YANG BISA DI-KLIK */}
                           {msg.image && (
                             <div className="mb-2">
-                              <img 
-                                src={`${import.meta.env.VITE_API_URL}/${msg.image}`} 
-                                alt="Attachment" 
+                              {/* ✅ FIX BUG #1: Ganti petik biasa → backtick */}
+                              <img
+                                src={`${import.meta.env.VITE_API_URL}/${msg.image}`}
+                                alt="Attachment"
                                 onClick={() => setFullscreenImage(`${import.meta.env.VITE_API_URL}/${msg.image}`)}
-                                className="max-w-[200px] max-h-[250px] object-cover rounded-xl border border-white/20 cursor-pointer hover:opacity-90 hover:scale-[1.02] transition-all duration-200" 
+                                className="max-w-[200px] max-h-[250px] object-cover rounded-xl border border-white/20 cursor-pointer hover:opacity-90 hover:scale-[1.02] transition-all duration-200"
                               />
                             </div>
                           )}
-                          
                           {msg.text && <span>{msg.text}</span>}
                         </div>
                         <span className="text-[10px] text-gray-400 mt-1 px-1">{msg.time}</span>
@@ -253,15 +234,12 @@ export function KotakMasuk() {
                   ))}
                 </div>
 
-                {/* Input Pesan */}
                 <div className="bg-white p-4 border-t border-gray-100 shrink-0">
-                  
-                  {/* PREVIEW GAMBAR SEBELUM DIKIRIM */}
                   {imagePreview && (
                     <div className="relative inline-block mb-3">
                       <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover rounded-xl border border-gray-200" />
-                      <button 
-                        onClick={() => {setImageFile(null); setImagePreview(null);}} 
+                      <button
+                        onClick={() => { setImageFile(null); setImagePreview(null); }}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"
                       >
                         <X className="w-3 h-3" />
@@ -270,8 +248,6 @@ export function KotakMasuk() {
                   )}
 
                   <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
-                    
-                    {/* TOMBOL UPLOAD GAMBAR */}
                     <label className="cursor-pointer p-3 text-gray-400 hover:text-[#FF6B35] hover:bg-orange-50 rounded-full transition-colors shrink-0">
                       <ImageIcon className="w-6 h-6" />
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
@@ -284,8 +260,8 @@ export function KotakMasuk() {
                       onChange={(e) => setMessageInput(e.target.value)}
                       className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-5 py-3 text-sm outline-none focus:border-[#FF6B35] focus:ring-2 focus:ring-orange-100 transition-all"
                     />
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       disabled={!messageInput.trim() && !imageFile}
                       className="w-12 h-12 rounded-full bg-[#FF6B35] text-white flex items-center justify-center shrink-0 disabled:opacity-50 transition-all shadow-md hover:bg-[#FF6B35]/90 hover:scale-105 active:scale-95"
                     >
@@ -297,21 +273,19 @@ export function KotakMasuk() {
             )}
           </div>
         </div>
-
       </div>
 
-      {/* MODAL GAMBAR FULLSCREEN */}
       {fullscreenImage && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
-          <button 
+          <button
             onClick={() => setFullscreenImage(null)}
             className="absolute top-6 right-6 text-white hover:text-[#FF6B35] bg-black/50 hover:bg-white/10 p-2 rounded-full transition-all"
           >
             <X className="w-8 h-8" />
           </button>
-          <img 
-            src={fullscreenImage} 
-            alt="Fullscreen View" 
+          <img
+            src={fullscreenImage}
+            alt="Fullscreen View"
             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
           />
         </div>

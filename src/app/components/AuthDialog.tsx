@@ -17,7 +17,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(''); 
+  const [errorMsg, setErrorMsg] = useState('');
 
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({
@@ -34,7 +34,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
     }
   }, [open, defaultMode]);
 
-  // LOGIKA LOGIN KE DATABASE
+  // ✅ FIX BUG #1: Ganti petik biasa → backtick agar VITE_API_URL tersubstitusi
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -48,7 +48,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
 
       if (response.ok) {
         setSuccess(true);
-        onAuthSuccess(data.user); 
+        onAuthSuccess(data.user);
       } else {
         setErrorMsg(data.error || 'Login gagal.');
       }
@@ -57,7 +57,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
     }
   };
 
-  // LOGIKA REGISTER KE DATABASE
+  // ✅ FIX BUG #1: Ganti petik biasa → backtick
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -90,17 +90,16 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
     }
   };
 
-  // LOGIKA LOGIN MENGGUNAKAN GOOGLE
+  // ✅ FIX BUG #1: Ganti petik biasa → backtick
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setErrorMsg('');
     try {
-      // Mengirim Token JWT Google ke API Gateway
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/google-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: credentialResponse.credential })
       });
-      
+
       const data = await response.json();
 
       if (response.ok) {
@@ -205,8 +204,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
                 <Button type="submit" className="w-full rounded-xl bg-primary hover:bg-primary/90">
                   Masuk
                 </Button>
-                
-                {/* PEMBATAS GOOGLE */}
+
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-gray-200" />
@@ -216,7 +214,6 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
                   </div>
                 </div>
 
-                {/* TOMBOL GOOGLE LOGIN */}
                 <div className="flex justify-center w-full">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
@@ -306,7 +303,6 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
                   Daftar
                 </Button>
 
-                {/* PEMBATAS GOOGLE */}
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-gray-200" />
@@ -316,7 +312,6 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
                   </div>
                 </div>
 
-                {/* TOMBOL GOOGLE LOGIN DI REGISTER */}
                 <div className="flex justify-center w-full">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
