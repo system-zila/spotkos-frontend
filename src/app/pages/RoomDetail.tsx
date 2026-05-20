@@ -62,13 +62,17 @@ export function RoomDetail() {
     window.scrollTo(0, 0);
     
     // Pertama, tarik semua kos untuk list 'Kost Serupa'
-    fetch(`${import.meta.env.VITE_API_URL}/api/rooms`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    })
       .then(res => res.json())
       .then(data => setAllRooms(data))
       .catch(err => console.error("Gagal menarik data semua kos:", err));
 
     // Kedua, tarik kos ini SECARA SPESIFIK 
-    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    })
       .then(res => res.json())
       .then(data => {
         setRoom(data);
@@ -80,7 +84,9 @@ export function RoomDetail() {
       });
 
     // Ketiga, tarik ulasan spesifik
-    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}/reviews`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}/reviews`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    })
       .then(res => {
          if(!res.ok) throw new Error("API ulasan error");
          return res.json();
@@ -231,7 +237,7 @@ export function RoomDetail() {
                 </div>
               </section>
 
-              {/* --- KETERSEDIAAN KAMAR --- */}
+              {/* --- KETERSSEDIAAN KAMAR --- */}
               <section className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2"><Grip className="w-5 h-5 text-[#FF6B35]"/> Ketersediaan Kamar</h2>
                 <div className="space-y-5">
@@ -474,10 +480,12 @@ export function RoomDetail() {
                         }
 
                         try {
-                          // PERHATIKAN: Gunakan backtick (`) murni, buang tanda \ di depan $
                           await fetch(`${import.meta.env.VITE_API_URL}/api/chats/initiate`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                              'Content-Type': 'application/json',
+                              'ngrok-skip-browser-warning': 'true'
+                            },
                             body: JSON.stringify({ 
                               sender: user.email, 
                               receiver: room.owner_email,
