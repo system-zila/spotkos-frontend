@@ -59,7 +59,10 @@ export function KotakMasuk() {
 
   const fetchInbox = () => {
     if (!user?.email) return;
-    fetch(`${import.meta.env.VITE_API_URL}/api/chats/kotak-masuk?email=${user.email}`)
+    // ✅ FIX: Tambahkan header bypass ngrok
+    fetch(`${import.meta.env.VITE_API_URL}/api/chats/kotak-masuk?email=${user.email}`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    })
       .then(res => res.json())
       .then(data => {
         setInboxList(data);

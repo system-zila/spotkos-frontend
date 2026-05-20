@@ -27,7 +27,10 @@ export function MyKost() {
 
   useEffect(() => {
     if (user?.email) {
-      fetch(`${import.meta.env.VITE_API_URL}/api/rooms/my-kosts?email=${user.email}`)
+      // ✅ FIX: Tambahkan header bypass ngrok
+      fetch(`${import.meta.env.VITE_API_URL}/api/rooms/my-kosts?email=${user.email}`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
         .then(res => res.json())
         .then(data => {
           if (!data.error) setMyKosts(data);
