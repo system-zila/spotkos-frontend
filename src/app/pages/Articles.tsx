@@ -19,12 +19,8 @@ export function Articles() {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/articles`, {
-          headers: {
-            'ngrok-skip-browser-warning': 'true',
-            'Content-Type': 'application/json'
-          }
-        });
+        // UBAH BARIS FETCH MENJADI:
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/articles?ngrok-skip-browser-warning=true`);
         if (!response.ok) throw new Error('Gagal mengambil data');
         const data = await response.json();
         setAllArticles(data);
