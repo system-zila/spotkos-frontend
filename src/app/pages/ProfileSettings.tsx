@@ -185,7 +185,7 @@ export function ProfileSettings() {
     return profile.birth_info;
   };
 
-  // ================= AVATAR UPLOAD HANDLER =================
+ // ================= AVATAR UPLOAD HANDLER =================
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -201,6 +201,12 @@ export function ProfileSettings() {
         const data = await res.json();
         if (res.ok) {
           setProfile((prev: any) => ({ ...prev, avatar: data.avatarUrl }));
+          
+          // ✅ TAMBAHKAN BARIS INI: Update Global Context agar UI langsung berubah
+          if (user && login) {
+            login({ ...user, avatar: data.avatarUrl });
+          }
+          
           showToast('Foto profil berhasil diperbarui!');
         } else {
           showToast('Gagal mengunggah foto profil.');

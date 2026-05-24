@@ -10,7 +10,7 @@ interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultMode?: 'login' | 'register';
-  onAuthSuccess: (user: { name: string; email: string; role?: string }) => void;
+  onAuthSuccess: (user: { name: string; email: string; role?: string; avatar?: string }) => void;
 }
 
 export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSuccess }: AuthDialogProps) {
