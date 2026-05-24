@@ -221,7 +221,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
                     theme="outline"
                     size="large"
                     text="continue_with"
-                    width="100%"
+                    width={350}
                   />
                 </div>
 
@@ -319,7 +319,7 @@ export function AuthDialog({ open, onOpenChange, defaultMode = 'login', onAuthSu
                     theme="outline"
                     size="large"
                     text="signup_with"
-                    width="100%"
+                    width={350}
                   />
                 </div>
 
