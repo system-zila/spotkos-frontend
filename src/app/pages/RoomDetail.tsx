@@ -62,17 +62,15 @@ export function RoomDetail() {
     window.scrollTo(0, 0);
     
     // Pertama, tarik semua kos untuk list 'Kost Serupa'
-    fetch(`${import.meta.env.VITE_API_URL}/api/rooms`, {
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    })
+    // Pertama, tarik semua kos untuk list 'Kost Serupa'
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms?ngrok-skip-browser-warning=true`)
       .then(res => res.json())
       .then(data => setAllRooms(data))
       .catch(err => console.error("Gagal menarik data semua kos:", err));
 
     // Kedua, tarik kos ini SECARA SPESIFIK 
-    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}`, {
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    })
+    // Kedua, tarik kos ini SECARA SPESIFIK 
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}?ngrok-skip-browser-warning=true`)
       .then(res => res.json())
       .then(data => {
         setRoom(data);
@@ -84,9 +82,7 @@ export function RoomDetail() {
       });
 
     // Ketiga, tarik ulasan spesifik
-    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}/reviews`, {
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    })
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}/reviews?ngrok-skip-browser-warning=true`)
       .then(res => {
          if(!res.ok) throw new Error("API ulasan error");
          return res.json();

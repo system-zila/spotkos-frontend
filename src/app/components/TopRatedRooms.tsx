@@ -16,12 +16,7 @@ export function TopRatedRooms({ filters }: TopRatedRoomsProps) {
 
   // MENGAMBIL DATA KOS DARI MYSQL (DENGAN FORMAT API BARU)
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/rooms`, {
-    headers: {
-      'ngrok-skip-browser-warning': 'true',
-      'Content-Type': 'application/json'
-      }
-    })
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms?ngrok-skip-browser-warning=true`)
       .then(res => res.json())
       .then(data => {
         // Pemetaan data yang disesuaikan dengan query API baru
