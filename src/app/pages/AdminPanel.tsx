@@ -123,12 +123,12 @@ export function AdminPanel() {
   };
 
   const fetchKostApprovals = () => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/admin/rooms`, {
-      headers: { 'ngrok-skip-browser-warning': 'true' } // ✅ Wajib ada untuk Cloudflare/Ngrok
+    // ✅ URL disesuaikan dengan backend
+    fetch(`${import.meta.env.VITE_API_URL}/api/rooms/admin/all`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' } 
     })
       .then(res => res.json())
       .then(data => {
-        // ✅ Proteksi: Pastikan yang masuk ke state HANYA array
         if (Array.isArray(data)) {
           setKostApprovals(data);
         } else {
