@@ -123,10 +123,23 @@ export function AdminPanel() {
   };
 
   const fetchKostApprovals = () => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/admin/rooms`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/admin/rooms`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' } // ✅ Wajib ada untuk Cloudflare/Ngrok
+    })
       .then(res => res.json())
-      .then(data => setKostApprovals(data))
-      .catch(err => console.error(err));
+      .then(data => {
+        // ✅ Proteksi: Pastikan yang masuk ke state HANYA array
+        if (Array.isArray(data)) {
+          setKostApprovals(data);
+        } else {
+          console.error('API Error (Bukan Array):', data);
+          setKostApprovals([]); 
+        }
+      })
+      .catch(err => {
+        console.error('Fetch kost error:', err);
+        setKostApprovals([]);
+      });
   };
 
   const fetchSupportChats = () => {
@@ -408,7 +421,7 @@ export function AdminPanel() {
     pendingWithdrawals: withdrawalsData.filter((w) => w.status === 'pending').length, // Data Penarikan
     openTickets: tickets.filter((t) => t.status !== 'resolved').length,
     totalArticles: articlesData.length,
-    pendingKosts: kostApprovals.filter((k) => k.status === 'pending').length,
+    pendingKosts: (Array.isArray(kostApprovals) ? kostApprovals : []).filter((k) => k.status === 'pending').length,
   };
 
   const filteredVerifications = verFilterStatus === 'all' ? verifications : verifications.filter((v) => v.status === verFilterStatus);
