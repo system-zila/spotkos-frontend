@@ -13,12 +13,12 @@ import {
   Plus, X, Save, Mail, Phone, User, ChevronDown, ChevronUp, Send,
   LogOut, Lock, Menu as MenuIcon, Receipt, Download,
   AlertTriangle, Tag, Type, AlignLeft, Image as ImageIcon,
-  Wallet // Icon untuk Penarikan Saldo
+  Wallet, Home // Icon untuk Penarikan Saldo
 } from 'lucide-react';
 
 // ===================== TYPES =====================
 
-type AdminSection = 'verification' | 'withdrawals' | 'customer-service' | 'articles' | 'users' | 'live-chat' | 'transactions';
+type AdminSection = 'verification' | 'withdrawals' | 'customer-service' | 'articles' | 'users' | 'live-chat' | 'transactions' | 'kost-approval';
 
 interface OwnerVerification {
   id: string;
@@ -84,6 +84,9 @@ export function AdminPanel() {
   const [transactionsData, setTransactionsData] = useState<any[]>([]);
   const [trxFilter, setTrxFilter] = useState<'all' | 'week' | 'month' | 'year'>('all');
 
+  const [kostApprovals, setKostApprovals] = useState<any[]>([]);
+  const [kostFilter, setKostFilter] = useState<string>('pending');
+
   const [verFilterStatus, setVerFilterStatus] = useState<string>('all');
   const [expandedVer, setExpandedVer] = useState<string | null>(null);
 
@@ -119,6 +122,13 @@ export function AdminPanel() {
       .catch(err => console.error(err));
   };
 
+  const fetchKostApprovals = () => {
+    fetch(`${import.meta.env.VITE_API_URL}/api/admin/rooms`)
+      .then(res => res.json())
+      .then(data => setKostApprovals(data))
+      .catch(err => console.error(err));
+  };
+
   const fetchSupportChats = () => {
     fetch(`${import.meta.env.VITE_API_URL}/api/admin/support/chats`)
       .then(res => res.json())
@@ -131,6 +141,7 @@ export function AdminPanel() {
       fetchVerifications();
       fetchWithdrawals();
       fetchSupportChats();
+      fetchKostApprovals();
       fetch(`${import.meta.env.VITE_API_URL}/api/rooms`).then(res => res.json()).then(data => setRoomsData(data)).catch(err => console.error(err));
       fetch(`${import.meta.env.VITE_API_URL}/api/users`).then(res => res.json()).then(data => setUsersData(data)).catch(err => console.error(err));
       fetch(`${import.meta.env.VITE_API_URL}/api/admin/transactions`).then(res => res.json()).then(data => setTransactionsData(data)).catch(err => console.error(err));
@@ -295,6 +306,24 @@ export function AdminPanel() {
     }
   };
 
+  const handleKostApprovalAction = async (id: string, action: 'approved' | 'rejected') => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: action })
+      });
+      if (res.ok) {
+        showToast(`Properti kos berhasil ${action === 'approved' ? 'disetujui' : 'ditolak'}!`);
+        fetchKostApprovals(); // Refresh data otomatis
+      } else {
+        showToast('Gagal memproses status kos.');
+      }
+    } catch (error) {
+      showToast('Kesalahan server.');
+    }
+  };
+
   const handleReply = async (ticketId: string) => {
     if (!replyText.trim()) return;
 
@@ -379,10 +408,12 @@ export function AdminPanel() {
     pendingWithdrawals: withdrawalsData.filter((w) => w.status === 'pending').length, // Data Penarikan
     openTickets: tickets.filter((t) => t.status !== 'resolved').length,
     totalArticles: articlesData.length,
+    pendingKosts: kostApprovals.filter((k) => k.status === 'pending').length,
   };
 
   const filteredVerifications = verFilterStatus === 'all' ? verifications : verifications.filter((v) => v.status === verFilterStatus);
   const filteredWithdrawals = wdFilter === 'all' ? withdrawalsData : withdrawalsData.filter((w) => w.status === wdFilter);
+  const filteredKosts = kostFilter === 'all' ? kostApprovals : kostApprovals.filter(k => k.status === kostFilter);
   const filteredTickets = csFilterStatus === 'all' ? tickets : tickets.filter((t) => t.status === csFilterStatus);
   const filteredUsers = usersData.filter((u) => {
     const matchRole = userFilter === 'all' || u?.role === userFilter;
@@ -392,6 +423,7 @@ export function AdminPanel() {
 
   const sidebarItems: { key: AdminSection; icon: React.ElementType; label: string; badge?: number }[] = [
     { key: 'verification', icon: ShieldCheck, label: 'Verifikasi Pemilik', badge: stats.pendingVerifications },
+    { key: 'kost-approval', icon: Home, label: 'Persetujuan Kos', badge: stats.pendingKosts },
     { key: 'withdrawals', icon: Wallet, label: 'Penarikan Saldo', badge: stats.pendingWithdrawals }, // Menu Baru
     { key: 'transactions', icon: Receipt, label: 'Data Transaksi' },
     { key: 'live-chat', icon: MessageSquare, label: 'Live Chat (Support)' },
@@ -702,6 +734,74 @@ export function AdminPanel() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* =================== KOST APPROVAL =================== */}
+          {section === 'kost-approval' && (
+            <div className="animate-in fade-in duration-300">
+              <div className="flex flex-wrap gap-2 mb-6">
+                {['all', 'pending', 'approved', 'rejected'].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setKostFilter(s)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      kostFilter === s ? 'bg-[#FF6B35] text-white shadow-sm' : 'bg-white border border-gray-200 hover:border-[#FF6B35]/50 text-gray-700'
+                    }`}
+                  >
+                    {s === 'all' ? 'Semua' : s === 'pending' ? 'Menunggu' : s === 'approved' ? 'Disetujui' : 'Ditolak'}
+                    {s === 'pending' && ` (${kostApprovals.filter(k => k.status === 'pending').length})`}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredKosts.length === 0 ? (
+                  <div className="col-span-full bg-white rounded-3xl p-8 text-center text-gray-500 border border-gray-200">
+                    Tidak ada data properti pada kategori ini.
+                  </div>
+                ) : filteredKosts.map((kost) => (
+                  <div key={kost.id} className="bg-white rounded-[24px] border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                    <div className="h-48 bg-gray-100 relative">
+                      <img src={`${import.meta.env.VITE_API_URL}/${kost.image}`} alt={kost.name} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400')} />
+                      <div className="absolute top-3 right-3">
+                        <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm ${
+                          kost.status === 'approved' ? 'bg-green-100 text-green-700' :
+                          kost.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {kost.status === 'approved' ? 'Disetujui' : kost.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-bold text-lg text-gray-900 line-clamp-1">{kost.name}</h3>
+                      <p className="text-sm text-gray-500 mb-4 line-clamp-1">{kost.location}</p>
+                      
+                      <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <div className="text-xs overflow-hidden">
+                          <p className="font-bold text-gray-700 truncate">{kost.owner_name}</p>
+                          <p className="text-gray-500 truncate">{kost.owner_email}</p>
+                        </div>
+                      </div>
+
+                      {kost.status === 'pending' && (
+                        <div className="flex gap-2 pt-2 border-t border-gray-100">
+                          <Button onClick={() => handleKostApprovalAction(kost.id, 'approved')} className="flex-1 bg-green-600 hover:bg-green-700 font-bold rounded-xl" size="sm">
+                            <CheckCircle2 className="w-4 h-4 mr-1.5" /> Setujui
+                          </Button>
+                          <Button onClick={() => handleKostApprovalAction(kost.id, 'rejected')} variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl" size="sm">
+                            <XCircle className="w-4 h-4 mr-1.5" /> Tolak
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
