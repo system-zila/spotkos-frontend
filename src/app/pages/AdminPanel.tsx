@@ -426,7 +426,8 @@ export function AdminPanel() {
 
   const filteredVerifications = verFilterStatus === 'all' ? verifications : verifications.filter((v) => v.status === verFilterStatus);
   const filteredWithdrawals = wdFilter === 'all' ? withdrawalsData : withdrawalsData.filter((w) => w.status === wdFilter);
-  const filteredKosts = kostFilter === 'all' ? kostApprovals : kostApprovals.filter(k => k.status === kostFilter);
+  const safeKostApprovals = Array.isArray(kostApprovals) ? kostApprovals : [];
+  const filteredKosts = kostFilter === 'all' ? safeKostApprovals : safeKostApprovals.filter(k => k.status === kostFilter);
   const filteredTickets = csFilterStatus === 'all' ? tickets : tickets.filter((t) => t.status === csFilterStatus);
   const filteredUsers = usersData.filter((u) => {
     const matchRole = userFilter === 'all' || u?.role === userFilter;
