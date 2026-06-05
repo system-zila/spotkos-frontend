@@ -471,7 +471,7 @@ export function AdminPanel() {
 
   const sidebarItems: { key: AdminSection; icon: React.ElementType; label: string; badge?: number }[] = [
     { key: 'verification', icon: ShieldCheck, label: 'Verifikasi Pemilik', badge: stats.pendingVerifications },
-    { key: 'kost-approval', icon: Home, label: 'Persetujuan Kos', badge: stats.pendingKosts },
+    { key: 'kost-approval', icon: Home, label: 'Panel Kos', badge: stats.pendingKosts },
     { key: 'withdrawals', icon: Wallet, label: 'Penarikan Saldo', badge: stats.pendingWithdrawals }, // Menu Baru
     { key: 'transactions', icon: Receipt, label: 'Data Transaksi' },
     { key: 'live-chat', icon: MessageSquare, label: 'Live Chat (Support)' },
