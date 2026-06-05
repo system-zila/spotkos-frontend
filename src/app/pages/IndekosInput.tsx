@@ -203,6 +203,10 @@ export function IndekosInput() {
       formData.append('roomSize', form.roomSize);
       formData.append('capacity', form.capacity);
 
+      // ✅ LOGIKA BARU: Otomatis deteksi status Kamar Mandi dari Fasilitas
+      const isKamarMandiDalam = form.facilities.includes('Kamar Mandi Dalam');
+      formData.append('bathroom', isKamarMandiDalam ? 'Dalam' : 'Luar');
+
       // ✅ FIX TYPESCRIPT: Bypass error AuthUser type
       const anyUser = user as any;
       const finalOwnerName = profile?.name || anyUser?.full_name || anyUser?.name || 'Owner';
