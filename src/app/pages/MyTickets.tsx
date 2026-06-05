@@ -60,7 +60,7 @@ export function MyTickets() {
     <div className="min-h-screen bg-[#faf9f6] flex flex-col">
       <Navigation />
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 pt-28 pb-16">
-        <Link to="/profile" className="inline-flex items-center gap-2 text-gray-500 hover:text-[#FF6B35] transition-colors mb-6 font-bold text-sm">
+        <Link to="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-[#FF6B35] transition-colors mb-6 font-bold text-sm">
           <ArrowLeft className="w-4 h-4" /> Kembali ke Profil
         </Link>
         <h1 className="text-3xl font-black text-gray-900 mb-8">Status Laporan & Bantuan</h1>
