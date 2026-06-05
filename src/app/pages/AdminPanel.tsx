@@ -87,6 +87,10 @@ export function AdminPanel() {
   const [kostApprovals, setKostApprovals] = useState<any[]>([]);
   const [kostFilter, setKostFilter] = useState<string>('pending');
 
+  const [inspectKost, setInspectKost] = useState<any | null>(null);
+  const [editKostForm, setEditKostForm] = useState({ name: '', price: '', status: '' });
+  const [isEditingKost, setIsEditingKost] = useState(false);
+
   const [verFilterStatus, setVerFilterStatus] = useState<string>('all');
   const [expandedVer, setExpandedVer] = useState<string | null>(null);
 
@@ -335,6 +339,36 @@ export function AdminPanel() {
     } catch (error) {
       showToast('Kesalahan server.');
     }
+  };
+
+  const handleDeleteKostAdmin = async (id: string) => {
+    if (!window.confirm("Hapus properti kos ini secara permanen? Data tidak dapat dikembalikan.")) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}`, {
+        method: 'DELETE', headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      if (res.ok) {
+        setKostApprovals(prev => prev.filter(k => k.id !== id));
+        showToast('Kos berhasil dihapus permanen.');
+        setInspectKost(null);
+      } else showToast('Gagal menghapus kos.');
+    } catch (error) { showToast('Kesalahan server.'); }
+  };
+
+  const handleSaveEditKost = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms/admin/${inspectKost.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editKostForm)
+      });
+      if (res.ok) {
+        showToast('Data kos berhasil diperbarui!');
+        fetchKostApprovals();
+        setInspectKost(null);
+        setIsEditingKost(false);
+      } else showToast('Gagal memperbarui data.');
+    } catch (error) { showToast('Kesalahan server.'); }
   };
 
   const handleReply = async (ticketId: string) => {
@@ -776,8 +810,8 @@ export function AdminPanel() {
                     Tidak ada data properti pada kategori ini.
                   </div>
                 ) : filteredKosts.map((kost) => (
-                  <div key={kost.id} className="bg-white rounded-[24px] border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
-                    <div className="h-48 bg-gray-100 relative">
+                  <div key={kost.id} className="bg-white rounded-[24px] border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
+                    <div className="h-48 bg-gray-100 relative shrink-0">
                       <img src={`${import.meta.env.VITE_API_URL}/${kost.image}`} alt={kost.name} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400')} />
                       <div className="absolute top-3 right-3">
                         <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm ${
@@ -789,11 +823,12 @@ export function AdminPanel() {
                         </span>
                       </div>
                     </div>
-                    <div className="p-5">
+                    
+                    <div className="p-5 flex flex-col flex-1">
                       <h3 className="font-bold text-lg text-gray-900 line-clamp-1">{kost.name}</h3>
                       <p className="text-sm text-gray-500 mb-4 line-clamp-1">{kost.location}</p>
                       
-                      <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
                         <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
                           <User className="w-4 h-4 text-orange-600" />
                         </div>
@@ -803,16 +838,37 @@ export function AdminPanel() {
                         </div>
                       </div>
 
-                      {kost.status === 'pending' && (
-                        <div className="flex gap-2 pt-2 border-t border-gray-100">
-                          <Button onClick={() => handleKostApprovalAction(kost.id, 'approved')} className="flex-1 bg-green-600 hover:bg-green-700 font-bold rounded-xl" size="sm">
-                            <CheckCircle2 className="w-4 h-4 mr-1.5" /> Setujui
-                          </Button>
-                          <Button onClick={() => handleKostApprovalAction(kost.id, 'rejected')} variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl" size="sm">
-                            <XCircle className="w-4 h-4 mr-1.5" /> Tolak
-                          </Button>
-                        </div>
-                      )}
+                      {/* AREA TOMBOL AKSI */}
+                      <div className="flex flex-col gap-2 pt-4 border-t border-gray-100 mt-auto">
+                        {kost.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <Button onClick={() => handleKostApprovalAction(kost.id, 'approved')} className="flex-1 bg-green-600 hover:bg-green-700 font-bold rounded-xl" size="sm">
+                              <CheckCircle2 className="w-4 h-4 mr-1.5" /> Setujui
+                            </Button>
+                            <Button onClick={() => handleKostApprovalAction(kost.id, 'rejected')} variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl" size="sm">
+                              <XCircle className="w-4 h-4 mr-1.5" /> Tolak
+                            </Button>
+                          </div>
+                        )}
+                        <Button 
+                          onClick={() => {
+                            setInspectKost(kost);
+                            setEditKostForm({ name: kost.name, price: kost.price, status: kost.status });
+                            setIsEditingKost(false);
+                          }} 
+                          variant="outline" 
+                          className="w-full border-blue-200 text-blue-600 hover:bg-blue-50 font-bold rounded-xl" size="sm"
+                        >
+                          <Eye className="w-4 h-4 mr-1.5" /> Inspect / Edit
+                        </Button>
+                        <Button 
+                          onClick={() => handleDeleteKostAdmin(kost.id)} 
+                          variant="outline" 
+                          className="w-full border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl" size="sm"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1.5" /> Hapus Permanen
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1585,7 +1641,59 @@ export function AdminPanel() {
               </div>
             </div>
           )}
+        {/* MODAL INSPECT & EDIT KOS */}
+      {inspectKost && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Inspect Properti Kos</h3>
+              <button onClick={() => setInspectKost(null)} className="p-2 bg-gray-100 rounded-full hover:bg-red-100 hover:text-red-500 transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+            
+            <div className="aspect-video rounded-xl overflow-hidden mb-6 border border-gray-200">
+              <ImageWithFallback src={`${import.meta.env.VITE_API_URL}/${inspectKost.image}`} alt={inspectKost.name} className="w-full h-full object-cover" />
+            </div>
 
+            {isEditingKost ? (
+              <div className="space-y-4 mb-6">
+                <div>
+                  <Label className="text-sm font-bold text-gray-700">Nama Kos</Label>
+                  <Input value={editKostForm.name} onChange={e => setEditKostForm({...editKostForm, name: e.target.value})} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-sm font-bold text-gray-700">Harga (Rp)</Label>
+                  <Input type="number" value={editKostForm.price} onChange={e => setEditKostForm({...editKostForm, price: e.target.value})} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-sm font-bold text-gray-700">Status</Label>
+                  <select value={editKostForm.status} onChange={e => setEditKostForm({...editKostForm, status: e.target.value})} className="w-full mt-1 h-10 rounded-md border border-gray-200 px-3 text-sm outline-none focus:border-[#FF6B35]">
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved (Aktif)</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button variant="outline" className="flex-1" onClick={() => setIsEditingKost(false)}>Batal</Button>
+                  <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveEditKost}><Save className="w-4 h-4 mr-2" /> Simpan</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 mb-6 text-sm">
+                <div className="flex justify-between border-b pb-2"><span className="text-gray-500">ID Kos</span><span className="font-bold text-gray-900">{inspectKost.id}</span></div>
+                <div className="flex justify-between border-b pb-2"><span className="text-gray-500">Nama</span><span className="font-bold text-gray-900">{inspectKost.name}</span></div>
+                <div className="flex justify-between border-b pb-2"><span className="text-gray-500">Lokasi</span><span className="font-bold text-gray-900 truncate max-w-[200px] text-right">{inspectKost.location}</span></div>
+                <div className="flex justify-between border-b pb-2"><span className="text-gray-500">Harga</span><span className="font-bold text-green-600">Rp {parseInt(inspectKost.price).toLocaleString('id-ID')}</span></div>
+                <div className="flex justify-between border-b pb-2"><span className="text-gray-500">Pemilik</span><span className="font-bold text-gray-900">{inspectKost.owner_name}</span></div>
+                <div className="flex justify-between pb-2"><span className="text-gray-500">Email Pemilik</span><span className="font-bold text-gray-900">{inspectKost.owner_email}</span></div>
+                
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4 font-bold rounded-xl" onClick={() => setIsEditingKost(true)}>
+                  <Edit3 className="w-4 h-4 mr-2" /> Edit Info Dasar
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
         </div>
 
         {/* Footer */}
