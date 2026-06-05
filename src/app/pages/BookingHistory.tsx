@@ -21,6 +21,7 @@ interface BookingData {
   roomName: string;
   roomLocation: string;
   roomImage: string;
+  user_rating: number | null; // ✅ Data baru untuk deteksi rating
 }
 
 const statusConfig = {
@@ -49,7 +50,9 @@ export function BookingHistory() {
 
   const fetchBookings = () => {
     if (user?.email) {
-      fetch(`${import.meta.env.VITE_API_URL}/api/bookings/user?email=${user.email}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/bookings/user?email=${user.email}`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
         .then(res => res.json())
         .then(data => {
           const parsedBookings: BookingData[] = data.map((b: any) => {
@@ -74,7 +77,8 @@ export function BookingHistory() {
               duration: b.duration,
               roomName: b.roomName,
               roomLocation: b.roomLocation,
-              roomImage: finalImage
+              roomImage: finalImage,
+              user_rating: b.user_rating || null // Tangkap rating
             };
           });
           setBookings(parsedBookings);
@@ -159,6 +163,7 @@ export function BookingHistory() {
       if(res.ok) {
           alert('Terima kasih! Ulasan berhasil dikirim dan akan tampil di halaman Kos.');
           setReviewModalOpen(false);
+          fetchBookings(); // ✅ Refresh riwayat agar tombol berubah jadi bintang
       } else {
           alert(data.error || 'Gagal mengirim ulasan.');
       }
@@ -289,26 +294,35 @@ export function BookingHistory() {
                               </div>
                             )}
 
-                            <div className="flex justify-end gap-2 flex-wrap">
-                              {/* TOMBOL REVIEW HANYA MUNCUL JIKA BOOKING SUDAH BERHASIL DIBAYAR */}
+                            <div className="flex justify-end gap-2 flex-wrap items-center mt-2">
+                              {/* ✅ LOGIKA BARU: Jika belum di-review, muncul tombol. Jika sudah, muncul bintang */}
                               {booking.status === 'confirmed' && (
-                                <Button 
-                                  size="sm" 
-                                  className="rounded-xl bg-[#FF6B35] hover:bg-[#FF6B35]/90 text-white font-bold"
-                                  onClick={() => {
-                                    setReviewBooking(booking);
-                                    setRating(5);
-                                    setReviewComment('');
-                                    setReviewModalOpen(true);
-                                  }}
-                                >
-                                  <Star className="w-4 h-4 mr-1.5 fill-current" /> Berikan Ulasan
-                                </Button>
+                                booking.user_rating === null ? (
+                                  <Button 
+                                    size="sm" 
+                                    className="rounded-xl bg-[#FF6B35] hover:bg-[#FF6B35]/90 text-white font-bold h-10 px-4"
+                                    onClick={() => {
+                                      setReviewBooking(booking);
+                                      setRating(5);
+                                      setReviewComment('');
+                                      setReviewModalOpen(true);
+                                    }}
+                                  >
+                                    <Star className="w-4 h-4 mr-1.5 fill-current" /> Berikan Ulasan
+                                  </Button>
+                                ) : (
+                                  <div className="flex items-center gap-1 bg-yellow-50 border border-yellow-200 px-3 py-1.5 rounded-xl h-10">
+                                    <span className="text-xs font-bold text-yellow-700 mr-1">Penilaian Anda:</span>
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                      <Star key={i} className={`w-3.5 h-3.5 ${i < booking.user_rating! ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                                    ))}
+                                  </div>
+                                )
                               )}
 
                               {booking.roomId && (
                                 <Link to={`/kost/${booking.roomId}`}>
-                                  <Button size="sm" variant="outline" className="rounded-xl border-gray-200 hover:bg-gray-50">
+                                  <Button size="sm" variant="outline" className="rounded-xl border-gray-200 hover:bg-gray-50 font-bold text-gray-700 h-10 px-4">
                                     <Eye className="w-4 h-4 mr-1.5" /> Lihat Detail Kos
                                   </Button>
                                 </Link>
