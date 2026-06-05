@@ -1056,22 +1056,37 @@ export function AdminPanel() {
                       Belum ada obrolan masuk.
                     </div>
                   ) : (
-                    supportChats.map((chatGroup: any) => (
-                      <button
-                        key={chatGroup.email}
-                        onClick={() => { setActiveChatEmail(chatGroup.email); chatGroup.unread = 0; }}
-                        className={`w-full text-left p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors ${activeChatEmail === chatGroup.email ? 'bg-orange-50/50 relative' : ''}`}
-                      >
-                        {activeChatEmail === chatGroup.email && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF6B35]"></div>}
-                        <div className="w-11 h-11 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold shrink-0 border border-blue-200">
-                          {chatGroup.email.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-sm text-gray-900 truncate">{chatGroup.email}</h4>
-                          <p className="text-xs text-gray-500 truncate mt-1">{chatGroup.lastMessage}</p>
-                        </div>
-                      </button>
-                    ))
+                    supportChats.map((chatGroup: any) => {
+                      // Logic render Avatar fallback
+                      const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(chatGroup.name || chatGroup.email)}&background=random`;
+                      const userAvatar = chatGroup.avatar ? (chatGroup.avatar.startsWith('http') ? chatGroup.avatar : `${import.meta.env.VITE_API_URL}/${chatGroup.avatar}`) : fallbackAvatar;
+
+                      return (
+                        <button
+                          key={chatGroup.email}
+                          onClick={() => { setActiveChatEmail(chatGroup.email); chatGroup.unread = 0; }}
+                          className={`w-full text-left p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors ${activeChatEmail === chatGroup.email ? 'bg-orange-50/50 relative' : ''}`}
+                        >
+                          {activeChatEmail === chatGroup.email && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF6B35]"></div>}
+                          
+                          {/* FOTO PROFIL (AVATAR) */}
+                          <div className="relative shrink-0 mt-1">
+                            <img 
+                              src={userAvatar} 
+                              alt={chatGroup.name} 
+                              className="w-11 h-11 rounded-full object-cover border border-gray-200" 
+                              onError={(e) => { e.currentTarget.src = fallbackAvatar; }}
+                            />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-sm text-gray-900 truncate">{chatGroup.name || chatGroup.email}</h4>
+                            <p className="text-[10px] text-gray-400 truncate mt-0.5">{chatGroup.email}</p>
+                            <p className="text-xs text-gray-600 truncate mt-1.5">{chatGroup.lastMessage}</p>
+                          </div>
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -1086,10 +1101,27 @@ export function AdminPanel() {
                 ) : (
                   <>
                     <div className="bg-white p-5 border-b border-gray-200 shadow-sm z-10 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                         {activeChatEmail.charAt(0).toUpperCase()}
-                      </div>
-                      <h3 className="font-bold text-gray-900 text-lg">{activeChatEmail}</h3>
+                      {/* HEADER FOTO PROFIL */}
+                      {(() => {
+                        const activeUser = supportChats.find(c => c.email === activeChatEmail);
+                        const fallbackHeaderAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(activeUser?.name || activeChatEmail)}&background=random`;
+                        const headerAvatar = activeUser?.avatar ? (activeUser.avatar.startsWith('http') ? activeUser.avatar : `${import.meta.env.VITE_API_URL}/${activeUser.avatar}`) : fallbackHeaderAvatar;
+
+                        return (
+                          <>
+                            <img 
+                              src={headerAvatar} 
+                              alt="Avatar" 
+                              className="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm" 
+                              onError={(e) => { e.currentTarget.src = fallbackHeaderAvatar; }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-gray-900 text-lg leading-tight truncate">{activeUser?.name || activeChatEmail}</h3>
+                              <p className="text-xs text-gray-500 truncate">{activeChatEmail}</p>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                     
                     <div className="flex-1 overflow-y-auto p-6 space-y-4" ref={chatScrollRef}>
