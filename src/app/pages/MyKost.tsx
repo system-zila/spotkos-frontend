@@ -5,7 +5,7 @@ import { Footer } from '../components/Footer';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import {
-  ArrowLeft, MapPin, Home, PlusCircle, Star, ExternalLink, ChevronDown, ChevronUp
+  ArrowLeft, MapPin, Home, PlusCircle, Star, ExternalLink, ChevronDown, ChevronUp, Trash2
 } from 'lucide-react';
 
 export function MyKost() {
@@ -37,6 +37,28 @@ export function MyKost() {
         });
     }
   }, [user]);
+
+  // ✅ LOGIKA BARU: Eksekutor Hapus Kos
+  const handleDeleteKost = async (id: string) => {
+    const confirmDelete = window.confirm("Apakah Anda yakin ingin menghapus properti ini secara permanen? Data yang dihapus tidak dapat dikembalikan.");
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms/${id}`, {
+        method: 'DELETE',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      
+      if (res.ok) {
+        // Hapus dari UI tanpa perlu refresh halaman
+        setMyKosts(prev => prev.filter(k => k.id !== id));
+      } else {
+        alert('Gagal menghapus properti kos.');
+      }
+    } catch (error) {
+      alert('Terjadi kesalahan koneksi saat menghapus.');
+    }
+  };
 
   if (!user || isLoading) return null; 
 
@@ -116,11 +138,24 @@ export function MyKost() {
                           Rp {parseInt(kost.price).toLocaleString('id-ID')} <span className="text-xs font-bold text-gray-400 uppercase">/ bulan</span>
                         </div>
                         <div className="flex items-center gap-2">
+                          {/* ✅ TOMBOL HAPUS KOS */}
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleDeleteKost(kost.id)}
+                            className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 h-10 px-3 transition-colors"
+                            title="Hapus Properti"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+
+                          {/* ✅ TOMBOL LIHAT KOS (Ke Halaman Publikasi) */}
                           <Link to={`/kost/${kost.id}`}>
-                            <Button variant="outline" size="sm" className="rounded-xl border-gray-300 font-bold text-gray-700 hover:bg-gray-50 h-10 px-4">
+                            <Button variant="outline" size="sm" className="rounded-xl border-gray-300 font-bold text-gray-700 hover:bg-gray-50 h-10 px-4 transition-colors">
                               <ExternalLink className="w-4 h-4 mr-2" /> Lihat Kos
                             </Button>
                           </Link>
+
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -134,9 +169,10 @@ export function MyKost() {
                     </div>
                   </div>
 
+                  {/* ✅ PENAMBAHAN KOTAK RATING DI DETAIL */}
                   {isExpanded && (
                     <div className="p-6 bg-gray-50/50 border-t border-gray-100">
-                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                           <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                             <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider block mb-1">Ukuran Kamar</span>
                             <span className="font-bold text-gray-900">{kost.room_size || '-'}</span>
@@ -152,6 +188,10 @@ export function MyKost() {
                           <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                             <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider block mb-1">Peruntukan</span>
                             <span className="font-bold text-gray-900">{kost.gender || 'Campur'}</span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                            <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider block mb-1">Rating Review</span>
+                            <span className="font-bold text-gray-900">{ratingVal} / 5.0</span>
                           </div>
                        </div>
                     </div>
