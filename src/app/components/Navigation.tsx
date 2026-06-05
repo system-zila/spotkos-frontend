@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, User, LogOut, History, PlusCircle, Home, Settings, MessageSquare } from 'lucide-react';
+import { Menu, X, User, LogOut, History, PlusCircle, Home, Settings, MessageSquare, Ticket } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { Button } from './ui/button';
 import { AuthDialog } from './AuthDialog';
@@ -70,7 +70,7 @@ export function Navigation() {
             } else {
               setUserAvatar(`${import.meta.env.VITE_API_URL}/${data.avatar}`); 
             }
-          } // <--- KURUNG KURAWAL INI YANG SEBELUMNYA HILANG
+          }
         })
         .catch(err => console.error("Gagal menarik avatar profil:", err));
 
@@ -145,7 +145,7 @@ export function Navigation() {
                           src={userAvatar} 
                           alt="Profile" 
                           className="w-full h-full object-cover" 
-                          referrerPolicy="no-referrer" // <--- TAMBAHKAN INI
+                          referrerPolicy="no-referrer"
                         />
                       ) : (
                         <User className="w-5 h-5 text-white" />
@@ -212,10 +212,19 @@ export function Navigation() {
                       >
                         <Settings className="w-4 h-4 text-gray-500" /> Pengaturan Profil
                       </Link>
+
+                      {/* TOMBOL TIKET BANTUAN DITAMBAHKAN DI SINI */}
+                      <Link
+                        to="/my-tickets"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-secondary transition-colors border-t border-gray-50 font-medium text-gray-700"
+                      >
+                        <Ticket className="w-4 h-4 text-[#FF6B35]" /> Tiket Bantuan
+                      </Link>
                       
                       <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-50 transition-colors w-full text-left font-bold text-red-600"
+                        className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-50 transition-colors w-full text-left font-bold text-red-600 border-t border-border mt-1"
                       >
                         <LogOut className="w-4 h-4" /> Keluar
                       </button>
@@ -280,6 +289,10 @@ export function Navigation() {
                     </Link>
                     <Link to="/profil" onClick={() => setIsMenuOpen(false)} className="text-foreground hover:text-primary transition-colors">
                       Pengaturan Profil
+                    </Link>
+                    {/* TIKET BANTUAN UNTUK MOBILE */}
+                    <Link to="/my-tickets" onClick={() => setIsMenuOpen(false)} className="text-foreground hover:text-primary transition-colors">
+                      Tiket Bantuan
                     </Link>
                   </>
                 )}
