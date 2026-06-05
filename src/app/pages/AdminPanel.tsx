@@ -147,10 +147,23 @@ export function AdminPanel() {
   };
 
   const fetchSupportChats = () => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/admin/support/chats`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/admin/support/chats`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' } // ✅ Bypass proteksi Ngrok
+    })
       .then(res => res.json())
-      .then(data => setSupportChats(data))
-      .catch(err => console.error(err));
+      .then(data => {
+        // ✅ Proteksi: Pastikan hanya data Array yang boleh masuk ke State
+        if (Array.isArray(data)) {
+          setSupportChats(data);
+        } else {
+          console.error('Support Chats API Error:', data);
+          setSupportChats([]); 
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        setSupportChats([]);
+      });
   };
 
   useEffect(() => {
