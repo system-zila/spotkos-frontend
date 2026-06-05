@@ -13,7 +13,7 @@ import L from 'leaflet';
 import {
   Home, MapPin, DollarSign, Camera, CheckCircle2,
   Plus, X, Wifi, Wind, Bath, Car, Shield, CookingPot, Zap,
-  Users, FileText, ArrowLeft, ArrowRight, ShieldAlert, PhoneOff, Clock, Upload, XCircle, AlertTriangle, Building,
+  Users, FileText, ArrowLeft, ArrowRight, ShieldAlert, PhoneOff, Clock, Upload, XCircle, AlertTriangle, Building, User
 } from 'lucide-react';
 
 // PERBAIKAN BUG IKON LEAFLET VIA CDN
@@ -46,7 +46,6 @@ export function IndekosInput() {
   // ================= STATE PROTEKSI =================
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [myKosts, setMyKosts] = useState<any[]>([]);
   
   // STATE UPLOAD KTP & SELFIE
   const [ktpFile, setKtpFile] = useState<File | null>(null);
@@ -61,6 +60,11 @@ export function IndekosInput() {
   // ================= STATE FORM 4 TAHAP =================
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  
+  // State untuk Lantai Dinamis
+  const [floorCount, setFloorCount] = useState<number | ''>('');
+  const [floorsData, setFloorsData] = useState<{ name: string, capacity: number }[]>([]);
+
   const [form, setForm] = useState({
     name: '',
     location: '',
@@ -70,11 +74,6 @@ export function IndekosInput() {
     description: '',
     roomSize: '',
     capacity: '1 orang',
-    totalRooms: '', 
-    bathroom: 'Dalam',
-    floor: '',
-    ownerName: '',
-    ownerPhone: '',
     facilities: [] as string[],
     rules: [''] as string[],
     photos: [] as string[],
@@ -143,6 +142,26 @@ export function IndekosInput() {
     } catch (err) { alert('Kesalahan server.'); }
   };
 
+  // Handler Generator Lantai Dinamis
+  const handleFloorCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value);
+    if (isNaN(val) || val <= 0) {
+      setFloorCount('');
+      setFloorsData([]);
+      return;
+    }
+    setFloorCount(val);
+    const newFloors = [];
+    for (let i = 1; i <= val; i++) {
+      const existing = floorsData[i - 1];
+      newFloors.push({
+        name: `Lantai ${i}`,
+        capacity: existing ? existing.capacity : 0
+      });
+    }
+    setFloorsData(newFloors);
+  };
+
   const toggleFacility = (name: string) => {
     setForm(prev => ({
       ...prev,
@@ -183,15 +202,26 @@ export function IndekosInput() {
       formData.append('description', form.description);
       formData.append('roomSize', form.roomSize);
       formData.append('capacity', form.capacity);
-      formData.append('totalRooms', form.totalRooms); 
-      formData.append('bathroom', form.bathroom);
-      formData.append('floor', form.floor);
-      formData.append('ownerName', form.ownerName);
-      formData.append('ownerPhone', form.ownerPhone);
+
+      // ✅ FIX TYPESCRIPT: Bypass error AuthUser type
+      const anyUser = user as any;
+      const finalOwnerName = profile?.name || anyUser?.full_name || anyUser?.name || 'Owner';
+      const finalOwnerPhone = profile?.phone || anyUser?.phone || '-';
+      
+      formData.append('ownerName', finalOwnerName);
+      formData.append('ownerPhone', finalOwnerPhone);
+
+      // Detail Lantai Dinamis
+      formData.append('floorsData', JSON.stringify(floorsData));
+      formData.append('floor', String(floorCount)); // Fallback kompatibilitas
+      
+      const totalAllRooms = floorsData.reduce((acc, curr) => acc + curr.capacity, 0);
+      formData.append('totalRooms', String(totalAllRooms));
+
       formData.append('facilities', JSON.stringify(form.facilities));
       formData.append('rules', JSON.stringify(form.rules.filter(Boolean)));
       
-      // Mengirimkan titik koordinat peta ke backend
+      // Koordinat Leaflet
       formData.append('latitude', coordinates.lat.toString());
       formData.append('longitude', coordinates.lng.toString());
       
@@ -199,6 +229,7 @@ export function IndekosInput() {
 
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rooms/register`, {
         method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' },
         body: formData 
       });
       
@@ -214,15 +245,19 @@ export function IndekosInput() {
 
   const isStepValid = () => {
     if (step === 1) return !!(form.name && form.location && form.address && form.price && form.description);
-    if (step === 2) return !!(form.roomSize && form.floor && form.totalRooms);
+    if (step === 2) return !!(form.roomSize && floorCount !== '' && floorsData.length > 0 && floorsData.every(f => f.capacity > 0));
     if (step === 3) return form.rules[0]?.trim() !== '' && form.photos.length > 0;
-    if (step === 4) return !!(form.ownerName && form.ownerPhone);
+    if (step === 4) return true; // Data owner otomatis
     return false;
   };
 
   if (isLoading || !user) return null;
 
-  if (!profile?.phone) {
+  // Cek apakah phone tersedia (profil phone ATAU anyUser phone)
+  const anyUser = user as any;
+  const userHasPhone = profile?.phone || anyUser?.phone;
+
+  if (!userHasPhone) {
     return (
       <div className="min-h-screen bg-[#faf9f6] flex flex-col">
         <Navigation />
@@ -231,7 +266,7 @@ export function IndekosInput() {
             <PhoneOff className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">Verifikasi Nomor HP Diperlukan</h2>
             <p className="text-gray-500 text-sm mb-6">Anda wajib memverifikasi Nomor Handphone di profil sebelum mendaftar sebagai Pemilik Kost.</p>
-            <Link to="/profil"><Button className="w-full bg-[#FF6B35] rounded-xl py-6">Pergi ke Profil</Button></Link>
+            <Link to="/profil"><Button className="w-full bg-[#FF6B35] hover:bg-orange-600 rounded-xl py-6 font-bold">Pergi ke Profil</Button></Link>
           </div>
         </div>
         <Footer />
@@ -298,7 +333,7 @@ export function IndekosInput() {
                   </div>
                 </div>
               </div>
-              <Button type="submit" className="w-full bg-[#002855] hover:bg-[#003570] rounded-xl py-6 text-lg mt-4">Kirim Dokumen Verifikasi</Button>
+              <Button type="submit" className="w-full bg-[#002855] hover:bg-[#003570] rounded-xl py-6 text-lg mt-4 font-bold">Kirim Dokumen Verifikasi</Button>
             </form>
           </div>
         </main>
@@ -316,7 +351,7 @@ export function IndekosInput() {
             <Clock className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Sedang Diverifikasi</h2>
             <p className="text-gray-500 text-sm mb-8">Dokumen identitas Anda sedang ditinjau oleh Admin SpotKos. Anda baru dapat mengakses halaman Daftarkan Kost setelah disetujui (Maks. 1x24 Jam).</p>
-            <Link to="/"><Button variant="outline" className="w-full rounded-xl py-6">Kembali ke Beranda</Button></Link>
+            <Link to="/"><Button variant="outline" className="w-full rounded-xl py-6 font-bold">Kembali ke Beranda</Button></Link>
           </div>
         </div>
         <Footer />
@@ -334,8 +369,8 @@ export function IndekosInput() {
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </div>
             <h1 className="text-3xl font-bold mb-3 text-gray-900">Kost Berhasil Ditayangkan!</h1>
-            <p className="text-gray-500 mb-8">Data properti kost Anda berhasil disubmit dan kini sudah berstatus Aktif di platform SpotKos.</p>
-            <Link to="/"><Button className="w-full rounded-xl bg-[#FF6B35] hover:bg-[#FF6B35]/90 py-6 text-lg">Kembali ke Beranda</Button></Link>
+            <p className="text-gray-500 mb-8">Data properti kost Anda berhasil disubmit dan kini sedang ditinjau atau telah aktif di platform SpotKos.</p>
+            <Link to="/"><Button className="w-full rounded-xl bg-[#FF6B35] hover:bg-[#FF6B35]/90 py-6 text-lg font-bold">Kembali ke Beranda</Button></Link>
           </div>
         </div>
         <Footer />
@@ -351,27 +386,27 @@ export function IndekosInput() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="mb-6">
-            <Link to="/" className="inline-flex items-center text-sm text-gray-500 hover:text-[#FF6B35] transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" /> Kembali ke Beranda
+            <Link to="/" className="inline-flex items-center text-sm text-gray-500 hover:text-[#FF6B35] transition-colors font-medium">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Batal & Kembali
             </Link>
           </div>
 
           <div className="text-center mb-10">
-            <h1 className="text-4xl text-gray-900 font-medium mb-3">Daftarkan Kost Anda</h1>
-            <p className="text-gray-500 text-sm">Isi formulir di bawah untuk mendaftarkan kost Anda di platform SpotKos</p>
+            <h1 className="text-4xl text-gray-900 font-bold mb-3">Daftarkan Kost Anda</h1>
+            <p className="text-gray-500 text-sm">Isi formulir di bawah untuk mendaftarkan kos Anda secara detail di SpotKos</p>
           </div>
 
           <div className="flex items-center justify-center mb-10">
             {[1, 2, 3, 4].map((s, idx) => (
               <div key={s} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
-                  s === step ? 'bg-[#FF6B35] text-white shadow-md' : 
-                  s < step ? 'bg-[#FF6B35] text-white' : 'bg-gray-100 text-gray-400'
+                  s === step ? 'bg-[#FF6B35] text-white font-bold shadow-md' : 
+                  s < step ? 'bg-[#FF6B35] text-white font-bold' : 'bg-gray-200 text-gray-400 font-bold'
                 }`}>
-                  {s}
+                  {s < step ? <CheckCircle2 className="w-5 h-5" /> : s}
                 </div>
                 {idx < 3 && (
-                  <div className={`w-12 h-0.5 ${s < step ? 'bg-[#FF6B35]' : 'bg-gray-200'}`}></div>
+                  <div className={`w-12 h-1 ${s < step ? 'bg-[#FF6B35]' : 'bg-gray-200'}`}></div>
                 )}
               </div>
             ))}
@@ -379,29 +414,30 @@ export function IndekosInput() {
 
           <div className="bg-white rounded-[32px] p-8 md:p-10 shadow-sm border border-gray-100">
             
+            {/* TAHAP 1: INFO DASAR */}
             {step === 1 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-medium flex items-center gap-2 text-gray-800 mb-6">
-                  <Home className="w-5 h-5 text-[#FF6B35]" /> Informasi Dasar
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800 mb-6 border-b border-gray-100 pb-4">
+                  <Home className="w-6 h-6 text-[#FF6B35]" /> Informasi Dasar
                 </h2>
                 
                 <div className="space-y-5">
                   <div>
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Nama Kost</Label>
-                    <Input placeholder="Contoh: Kost Melati Residence" className="rounded-xl h-12" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                    <Label className="mb-2 block text-sm font-bold text-gray-700">Nama Kos <span className="text-red-500">*</span></Label>
+                    <Input placeholder="Contoh: Kost Melati Residence" className="rounded-xl h-12 bg-gray-50 focus:bg-white" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                   </div>
                   <div>
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Lokasi (Kota/Area)</Label>
-                    <Input placeholder="Contoh: Menteng, Jakarta Pusat" className="rounded-xl h-12" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+                    <Label className="mb-2 block text-sm font-bold text-gray-700">Lokasi (Kota/Area) <span className="text-red-500">*</span></Label>
+                    <Input placeholder="Contoh: Menteng, Jakarta Pusat" className="rounded-xl h-12 bg-gray-50 focus:bg-white" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
                   </div>
                   <div>
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Alamat Lengkap</Label>
-                    <textarea placeholder="Jl. Menteng Raya No. 45, Menteng, Jakarta Pusat" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:border-[#FF6B35] min-h-[100px] resize-none" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                    <Label className="mb-2 block text-sm font-bold text-gray-700">Alamat Lengkap <span className="text-red-500">*</span></Label>
+                    <textarea placeholder="Jl. Menteng Raya No. 45, Menteng, Jakarta Pusat" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:bg-white focus:border-[#FF6B35] min-h-[100px] resize-none" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                   </div>
 
                   {/* ===== UI PETA LEAFLET ===== */}
                   <div className="pt-2">
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Tandai Lokasi Presisi di Peta</Label>
+                    <Label className="mb-2 block text-sm font-bold text-gray-700">Tandai Lokasi Presisi di Peta</Label>
                     <div className="w-full h-[300px] rounded-2xl overflow-hidden border border-gray-200 relative z-0">
                       <MapContainer 
                         center={[coordinates.lat, coordinates.lng]} 
@@ -421,14 +457,14 @@ export function IndekosInput() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label className="mb-2 block text-sm font-medium text-gray-700">Harga Sewa per Bulan (Rp)</Label>
-                      <Input type="number" placeholder="1500000" className="rounded-xl h-12" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                      <Label className="mb-2 block text-sm font-bold text-gray-700">Harga Sewa per Bulan (Rp) <span className="text-red-500">*</span></Label>
+                      <Input type="number" placeholder="1500000" className="rounded-xl h-12 bg-gray-50 focus:bg-white font-bold text-[#FF6B35]" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
                     </div>
                     <div>
-                      <Label className="mb-2 block text-sm font-medium text-gray-700">Tipe Kost</Label>
+                      <Label className="mb-2 block text-sm font-bold text-gray-700">Tipe Kos <span className="text-red-500">*</span></Label>
                       <div className="flex gap-2 h-12">
                         {(['Putra', 'Putri', 'Campur'] as const).map((g) => (
-                          <button key={g} type="button" onClick={() => setForm({ ...form, gender: g })} className={`flex-1 rounded-full border text-sm font-medium transition-colors ${form.gender === g ? 'border-[#FF6B35] bg-white text-[#FF6B35] ring-1 ring-[#FF6B35]' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                          <button key={g} type="button" onClick={() => setForm({ ...form, gender: g })} className={`flex-1 rounded-xl border text-sm font-bold transition-colors ${form.gender === g ? 'border-[#FF6B35] bg-orange-50 text-[#FF6B35]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                             {g}
                           </button>
                         ))}
@@ -437,65 +473,86 @@ export function IndekosInput() {
                   </div>
                   
                   <div>
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Deskripsi Kost</Label>
-                    <textarea placeholder="Jelaskan keunggulan dan fasilitas kost Anda..." className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:border-[#FF6B35] min-h-[100px] resize-none" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                    <Label className="mb-2 block text-sm font-bold text-gray-700">Deskripsi Kost <span className="text-red-500">*</span></Label>
+                    <textarea placeholder="Jelaskan keunggulan dan fasilitas kost Anda..." className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm outline-none focus:border-[#FF6B35] min-h-[100px] resize-none" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
                   </div>
                 </div>
               </div>
             )}
 
+            {/* TAHAP 2: DETAIL KAMAR & LANTAI (REVISI LANTAI DINAMIS) */}
             {step === 2 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-medium flex items-center gap-2 text-gray-800 mb-6">
-                  <FileText className="w-5 h-5 text-[#FF6B35]" /> Detail Kamar & Fasilitas
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800 mb-6 border-b border-gray-100 pb-4">
+                  <FileText className="w-6 h-6 text-[#FF6B35]" /> Spesifikasi & Kamar
                 </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div>
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Ukuran Kamar</Label>
-                    <Input placeholder="Contoh: 3 x 4 meter" className="rounded-xl h-12 border-none bg-gray-50/50" value={form.roomSize} onChange={(e) => setForm({ ...form, roomSize: e.target.value })} />
-                    <div className="h-[1px] bg-gray-200 mt-2 w-full"></div>
-                  </div>
-                  <div>
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Jumlah Lantai</Label>
-                    <Input type="number" placeholder="Contoh: 3" className="rounded-xl h-12 border-none bg-gray-50/50" value={form.floor} onChange={(e) => setForm({ ...form, floor: e.target.value })} />
-                    <div className="h-[1px] bg-gray-200 mt-2 w-full"></div>
-                  </div>
-                  <div>
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Total Kamar Kosong</Label>
-                    <Input type="number" placeholder="Contoh: 15" className="rounded-xl h-12 border-none bg-gray-50/50" value={form.totalRooms} onChange={(e) => setForm({ ...form, totalRooms: e.target.value })} />
-                    <div className="h-[1px] bg-gray-200 mt-2 w-full"></div>
-                  </div>
-                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div>
-                    <Label className="mb-3 block text-sm font-medium text-gray-700">Kapasitas Penghuni per Kamar</Label>
-                    <div className="flex gap-3">
-                      {['1 orang', '2 orang'].map((cap) => (
-                        <button key={cap} type="button" onClick={() => setForm({ ...form, capacity: cap })} className={`px-6 py-2.5 rounded-full border text-sm font-medium transition-colors ${form.capacity === cap ? 'border-[#FF6B35] bg-orange-50 text-[#FF6B35]' : 'border-gray-200 text-gray-600'}`}>
-                          {cap}
-                        </button>
-                      ))}
-                    </div>
+                    <Label className="mb-2 block text-sm font-bold text-gray-700">Ukuran Kamar <span className="text-red-500">*</span></Label>
+                    <Input placeholder="Contoh: 3 x 4 meter" className="rounded-xl h-12 bg-gray-50 focus:bg-white" value={form.roomSize} onChange={(e) => setForm({ ...form, roomSize: e.target.value })} />
                   </div>
                   <div>
-                    <Label className="mb-3 block text-sm font-medium text-gray-700">Kamar Mandi</Label>
+                    <Label className="mb-3 block text-sm font-bold text-gray-700">Kapasitas Penghuni per Kamar</Label>
                     <div className="flex gap-3">
-                      {['Dalam', 'Luar'].map((bath) => (
-                        <button key={bath} type="button" onClick={() => setForm({ ...form, bathroom: bath })} className={`px-6 py-2.5 rounded-full border text-sm font-medium transition-colors ${form.bathroom === bath ? 'border-[#FF6B35] bg-orange-50 text-[#FF6B35]' : 'border-gray-200 text-gray-600'}`}>
-                          {bath}
+                      {['1 orang', '2 orang'].map((cap) => (
+                        <button key={cap} type="button" onClick={() => setForm({ ...form, capacity: cap })} className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-colors ${form.capacity === cap ? 'border-[#FF6B35] bg-orange-50 text-[#FF6B35]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                          {cap}
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <Label className="mb-4 block text-sm font-medium text-gray-700">Fasilitas</Label>
+                {/* ===== GENERATOR LANTAI DINAMIS ===== */}
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                  <Label className="text-gray-900 font-bold text-lg mb-1 block">Alokasi Kamar per Lantai <span className="text-red-500">*</span></Label>
+                  <p className="text-sm text-gray-500 mb-6">Tentukan jumlah lantai bangunan, lalu isi ketersediaan kamar secara presisi di masing-masing lantai.</p>
+                  
+                  <div className="w-full md:w-1/2 mb-6">
+                    <Label className="text-gray-700 font-bold text-sm block mb-2">Total Jumlah Lantai Kos</Label>
+                    <Input type="number" placeholder="Ketik angka (misal: 2)" value={floorCount} onChange={handleFloorCountChange} className="h-12 rounded-xl bg-gray-50 focus:bg-white font-bold" />
+                  </div>
+
+                  {floorsData.length > 0 && (
+                    <div className="bg-orange-50/50 border border-orange-100 p-6 rounded-2xl">
+                      <h4 className="font-bold text-[#FF6B35] mb-4">Atur Jumlah Kamar</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {floorsData.map((floor, index) => (
+                          <div key={index} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <Label className="text-sm font-bold text-gray-700 block mb-2">{floor.name}</Label>
+                            <div className="relative">
+                              <Input 
+                                type="number" 
+                                placeholder="Jumlah kamar..." 
+                                value={floor.capacity || ''} 
+                                onChange={(e) => {
+                                  const newFloors = [...floorsData];
+                                  newFloors[index].capacity = parseInt(e.target.value) || 0;
+                                  setFloorsData(newFloors);
+                                }} 
+                                className="h-11 rounded-lg pr-16 font-bold" 
+                              />
+                              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">Kamar</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-5 pt-4 border-t border-orange-200 flex justify-between items-center">
+                        <span className="text-sm font-bold text-gray-800">Total Akumulasi Seluruh Kamar:</span>
+                        <span className="text-[#FF6B35] text-lg font-black bg-orange-100 px-4 py-1.5 rounded-lg shadow-sm border border-orange-200">
+                          {floorsData.reduce((acc, curr) => acc + curr.capacity, 0)} Kamar
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                  <Label className="mb-4 block text-sm font-bold text-gray-700">Fasilitas Kos & Kamar</Label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {ALL_FACILITIES.map(({ name, icon: Icon }) => (
-                      <button key={name} type="button" onClick={() => toggleFacility(name)} className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm transition-all ${form.facilities.includes(name) ? 'border-gray-300 shadow-sm text-gray-900' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}>
+                      <button key={name} type="button" onClick={() => toggleFacility(name)} className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${form.facilities.includes(name) ? 'border-[#FF6B35] bg-orange-50 text-[#FF6B35]' : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-orange-200'}`}>
                         <Icon className="w-4 h-4" /> <span>{name}</span>
                       </button>
                     ))}
@@ -504,81 +561,83 @@ export function IndekosInput() {
               </div>
             )}
 
+            {/* TAHAP 3: ATURAN & FOTO */}
             {step === 3 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-medium flex items-center gap-2 text-gray-800 mb-6">
-                  <Camera className="w-5 h-5 text-[#FF6B35]" /> Aturan & Foto Kamar
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800 mb-6 border-b border-gray-100 pb-4">
+                  <Camera className="w-6 h-6 text-[#FF6B35]" /> Aturan & Foto
                 </h2>
                 
                 <div className="mb-8">
-                  <Label className="mb-3 block text-sm font-medium text-gray-700">Peraturan Kost</Label>
+                  <Label className="mb-3 block text-sm font-bold text-gray-700">Peraturan Kos <span className="text-red-500">*</span></Label>
                   <div className="space-y-3">
                     {form.rules.map((rule, index) => (
                       <div key={index} className="flex items-center gap-3">
-                        <Input placeholder={`Aturan ${index + 1}`} className="rounded-xl h-12 border-none bg-gray-50/50 flex-1" value={rule} onChange={(e) => updateRule(index, e.target.value)} />
-                        {form.rules.length > 1 && <button type="button" onClick={() => removeRule(index)} className="p-2 text-gray-400 hover:text-red-500"><X className="w-5 h-5" /></button>}
+                        <Input placeholder={`Aturan ${index + 1} (Misal: Dilarang bawa hewan)`} className="rounded-xl h-12 bg-gray-50 focus:bg-white flex-1" value={rule} onChange={(e) => updateRule(index, e.target.value)} />
+                        {form.rules.length > 1 && <button type="button" onClick={() => removeRule(index)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-50 rounded-xl hover:bg-red-50"><X className="w-5 h-5" /></button>}
                       </div>
                     ))}
-                    <button type="button" onClick={addRule} className="flex items-center gap-1 text-sm font-medium text-[#FF6B35] hover:text-[#e55a2b] mt-2">
+                    <button type="button" onClick={addRule} className="flex items-center gap-1 text-sm font-bold text-[#FF6B35] hover:text-[#e55a2b] mt-3">
                       <Plus className="w-4 h-4" /> Tambah Aturan
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <Label className="mb-3 block text-sm font-medium text-gray-700">Foto Kamar</Label>
+                  <Label className="mb-3 block text-sm font-bold text-gray-700">Foto Kos (Maks 6) <span className="text-red-500">*</span></Label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {form.photos.map((photo, index) => (
-                      <div key={index} className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-gray-200 group">
+                      <div key={index} className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-gray-200 group shadow-sm">
                         <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
-                        <button type="button" onClick={() => removePhoto(index)} className="absolute top-2 right-2 w-7 h-7 bg-white/90 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-white"><X className="w-4 h-4" /></button>
+                        <button type="button" onClick={() => removePhoto(index)} className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"><X className="w-4 h-4" /></button>
                       </div>
                     ))}
                     {form.photos.length < 6 && (
-                      <label className="aspect-[4/3] rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 transition-all cursor-pointer">
+                      <label className="aspect-[4/3] rounded-2xl border-2 border-dashed border-gray-300 hover:border-[#FF6B35] bg-gray-50 hover:bg-orange-50 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-[#FF6B35] transition-colors cursor-pointer">
                         <Camera className="w-6 h-6" />
-                        <span className="text-xs font-medium">Upload Foto</span>
+                        <span className="text-xs font-bold uppercase tracking-wider">Upload Foto</span>
                         <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
                       </label>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400 mt-3">Maksimal 6 foto. Format: JPG, PNG.</p>
                 </div>
               </div>
             )}
 
+            {/* TAHAP 4: PREVIEW & FINALISASI (REVISI AUTO-BIND PEMILIK) */}
             {step === 4 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-medium flex items-center gap-2 text-gray-800 mb-6">
-                  <Users className="w-5 h-5 text-[#FF6B35]" /> Informasi Pemilik & Preview
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800 mb-6 border-b border-gray-100 pb-4">
+                  <CheckCircle2 className="w-6 h-6 text-[#FF6B35]" /> Finalisasi Data Kos
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <div>
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Nama Pemilik</Label>
-                    <Input placeholder="Nama lengkap pemilik" className="rounded-xl h-12 border-none bg-gray-50/50" value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} />
-                    <div className="h-[1px] bg-gray-200 mt-2 w-full"></div>
+                <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl mb-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full blur-3xl -mr-10 -mt-10 opacity-50"></div>
+                  <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2"><User className="w-5 h-5"/> Data Resmi Pengelola</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-blue-50">
+                      <span className="text-gray-400 text-xs font-bold tracking-wider uppercase block mb-1">Nama Sesuai Profil/KTP</span>
+                      <span className="font-bold text-gray-900">{profile?.name || (user as any)?.full_name || (user as any)?.name || 'Pemilik Kos'}</span>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-blue-50">
+                      <span className="text-gray-400 text-xs font-bold tracking-wider uppercase block mb-1">Nomor Telepon Valid</span>
+                      <span className="font-bold text-gray-900">{profile?.phone || (user as any)?.phone || '-'}</span>
+                    </div>
                   </div>
-                  <div>
-                    <Label className="mb-2 block text-sm font-medium text-gray-700">Nomor Telepon</Label>
-                    <Input type="tel" placeholder="08xxxxxxxxxx" className="rounded-xl h-12 border-none bg-gray-50/50" value={form.ownerPhone} onChange={(e) => setForm({ ...form, ownerPhone: e.target.value })} />
-                    <div className="h-[1px] bg-gray-200 mt-2 w-full"></div>
-                  </div>
+                  <p className="text-xs font-medium text-blue-700 mt-4">Demi perlindungan pengguna, sistem secara otomatis mengunci identitas pengelola sesuai akun profil terverifikasi Anda.</p>
                 </div>
 
-                <div className="bg-[#faf9f6] rounded-[24px] p-8 border border-gray-100">
-                  <h3 className="text-base font-medium mb-5 text-gray-900">Preview Data Kost</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Nama Kost</span><span className="font-medium text-gray-900">{form.name || '-'}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Lokasi</span><span className="font-medium text-gray-900">{form.location || '-'}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Harga</span><span className="font-medium text-gray-900">{form.price ? `Rp ${parseInt(form.price).toLocaleString('id-ID')}` : '-'}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Tipe</span><span className="font-medium text-gray-900">{form.gender}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Ukuran Kamar</span><span className="font-medium text-gray-900">{form.roomSize || '-'}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Total Kamar</span><span className="font-medium text-gray-900">{form.totalRooms || '-'}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Jumlah Lantai</span><span className="font-medium text-gray-900">{form.floor || '-'}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Kamar Mandi</span><span className="font-medium text-gray-900">{form.bathroom}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Fasilitas</span><span className="font-medium text-gray-900">{form.facilities.join(', ') || '-'}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-gray-500 text-xs">Aturan & Foto</span><span className="font-medium text-gray-900">{form.rules.filter(Boolean).length} aturan, {form.photos.length} foto</span></div>
+                <div className="bg-[#faf9f6] rounded-[24px] p-8 border border-gray-200">
+                  <h3 className="text-base font-bold mb-5 text-gray-900 border-b border-gray-200 pb-3">Ringkasan Spesifikasi</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-8 text-sm">
+                    <div className="flex flex-col gap-1"><span className="text-gray-400 text-xs font-bold uppercase">Nama Kost</span><span className="font-bold text-gray-900">{form.name || '-'}</span></div>
+                    <div className="flex flex-col gap-1"><span className="text-gray-400 text-xs font-bold uppercase">Lokasi</span><span className="font-bold text-gray-900">{form.location || '-'}</span></div>
+                    <div className="flex flex-col gap-1"><span className="text-gray-400 text-xs font-bold uppercase">Harga per Bulan</span><span className="font-bold text-green-600">{form.price ? `Rp ${parseInt(form.price).toLocaleString('id-ID')}` : '-'}</span></div>
+                    <div className="flex flex-col gap-1"><span className="text-gray-400 text-xs font-bold uppercase">Peruntukan</span><span className="font-bold text-gray-900">{form.gender}</span></div>
+                    <div className="flex flex-col gap-1"><span className="text-gray-400 text-xs font-bold uppercase">Ukuran Kamar</span><span className="font-bold text-gray-900">{form.roomSize || '-'}</span></div>
+                    <div className="flex flex-col gap-1"><span className="text-gray-400 text-xs font-bold uppercase">Jumlah Lantai</span><span className="font-bold text-gray-900">{floorCount || '-'} Lantai</span></div>
+                    <div className="flex flex-col gap-1"><span className="text-gray-400 text-xs font-bold uppercase">Total Kamar Kosong</span><span className="font-bold text-[#FF6B35]">{floorsData.reduce((acc, curr) => acc + curr.capacity, 0)} Kamar</span></div>
+                    <div className="flex flex-col gap-1"><span className="text-gray-400 text-xs font-bold uppercase">Kelengkapan</span><span className="font-bold text-gray-900">{form.facilities.length} Fasilitas, {form.rules.filter(Boolean).length} Aturan</span></div>
                   </div>
                 </div>
               </div>
@@ -586,8 +645,8 @@ export function IndekosInput() {
 
             <div className="flex justify-between mt-10 pt-6 border-t border-gray-100">
               {step > 1 ? (
-                <Button variant="outline" onClick={() => setStep(step - 1)} className="rounded-full px-6 border-gray-200 text-gray-600 hover:bg-gray-50">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Sebelumnya
+                <Button variant="outline" onClick={() => setStep(step - 1)} className="rounded-xl px-6 h-12 font-bold border-gray-300 text-gray-700 hover:bg-gray-50">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
                 </Button>
               ) : <div></div>}
               
@@ -595,7 +654,7 @@ export function IndekosInput() {
                 <Button 
                   onClick={() => setStep(step + 1)} 
                   disabled={!isStepValid()} 
-                  className="rounded-full px-8 bg-[#FF6B35] hover:bg-[#FF6B35]/90 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-xl px-8 h-12 bg-[#FF6B35] hover:bg-[#FF6B35]/90 text-white font-bold disabled:opacity-50 shadow-md"
                 >
                   Selanjutnya <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -603,9 +662,9 @@ export function IndekosInput() {
                 <Button 
                   onClick={handleSubmitKos} 
                   disabled={!isStepValid()} 
-                  className="rounded-full px-8 bg-[#FF6B35] hover:bg-[#FF6B35]/90 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-xl px-8 h-12 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md"
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-2" /> Submit Kost
+                  <CheckCircle2 className="w-5 h-5 mr-2" /> Publikasikan Kos!
                 </Button>
               )}
             </div>
