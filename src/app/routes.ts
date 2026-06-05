@@ -13,6 +13,7 @@ import { CustomerService } from './pages/CustomerService';
 import { Laporan } from './pages/Laporan';
 import { KotakMasuk } from './pages/KotakMasuk';
 import { CariKos } from './pages/CariKos';
+import { MyTickets } from './pages/MyTickets';
 
 // Import komponen halaman info tambahan
 import { FAQ } from './pages/FAQ';
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
   { path: '/customer-service', Component: CustomerService },
   { path: '/kotak-masuk', Component: KotakMasuk },
   { path: '/cari-kos', Component: CariKos },
+  { path: '/my-tickets', Component: MyTickets },
 
   // Tambahan rute dari Footer
   { path: '/faq', Component: FAQ },
