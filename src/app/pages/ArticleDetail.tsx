@@ -161,6 +161,14 @@ export function ArticleDetail() {
           </div>
 
           <div className="prose prose-lg max-w-none text-gray-700">
+            
+            {/* TAMBAHAN: Memunculkan Ringkasan Singkat (Excerpt) */}
+            {article.excerpt && (
+              <p className="text-xl font-bold italic text-gray-800 mb-8 pb-8 border-b border-gray-200">
+                "{article.excerpt}"
+              </p>
+            )}
+
             {/* MENERAPKAN DESAIN INTRO DROP-CAP LIVE PREVIEW */}
             {article.content?.intro && (
               <p className="text-base leading-loose mb-10 text-gray-700 first-letter:text-5xl first-letter:font-black first-letter:text-[#FF6B35] first-letter:mr-1 first-letter:float-left">

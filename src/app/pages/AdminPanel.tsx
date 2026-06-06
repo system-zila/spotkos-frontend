@@ -1445,18 +1445,19 @@ export function AdminPanel() {
                             if (!articleForm.title || !articleForm.excerpt || !articleForm.intro) return;
 
                             const articleData = {
-                              title: articleForm.title,
-                              excerpt: articleForm.excerpt,
-                              image: articleForm.image || 'https://images.unsplash.com/19/desktop.JPG?w=1080',
-                              category: articleForm.category,
-                              readTime: articleForm.readTime,
-                              author: articleForm.author,
-                              content: { 
-                                intro: articleForm.intro, 
-                                sections: articleForm.sections.filter((s) => s.heading && s.content), 
-                                conclusion: articleForm.conclusion 
-                              },
-                            };
+                            title: articleForm.title,
+                            excerpt: articleForm.excerpt,
+                            image: articleForm.image || 'https://images.unsplash.com/19/desktop.JPG?w=1080',
+                            category: articleForm.category,
+                            readTime: articleForm.readTime,
+                            author: articleForm.author,
+                            content: { 
+                              intro: articleForm.intro, 
+                              // ✅ FIX: Hapus syarat 's.heading' agar section tanpa judul tetap tersimpan di database
+                              sections: articleForm.sections.filter((s) => s.content.trim() !== ''), 
+                              conclusion: articleForm.conclusion 
+                            },
+                          };
 
                             try {
                               if (editingArticleId) {
