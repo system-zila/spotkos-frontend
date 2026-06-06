@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router';
 import { useEffect, useState } from 'react'; 
-import { ArrowLeft, Clock, Calendar, User, Facebook, Twitter, Link2 } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, User, Facebook, Twitter, Link2, CheckCircle2 } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Navigation } from '../components/Navigation';
 import { Footer } from '../components/Footer';
@@ -22,7 +22,6 @@ export function ArticleDetail() {
         const parsedData = data.map((item: any) => ({
           ...item,
           content: typeof item.content === 'string' ? JSON.parse(item.content) : item.content,
-          // PERBAIKAN: Normalisasi format gambar agar terbaca jika dari localhost
           image: item.image?.startsWith('http') ? item.image : `${import.meta.env.VITE_API_URL}/${item.image}`
         }));
 
@@ -107,37 +106,39 @@ export function ArticleDetail() {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      {/* Article Header */}
       <article className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link to="/artikel" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-8">
             <ArrowLeft className="w-5 h-5" /> Kembali
           </Link>
 
-          <div className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-full text-sm mb-6 font-bold tracking-wider uppercase">
-            {article.category || 'Tips & Trik'}
+          {/* MENERAPKAN DESAIN BADGE LIVE PREVIEW */}
+          <div className="inline-block px-4 py-1.5 bg-[#FF6B35] text-white font-bold rounded-full text-xs uppercase tracking-widest mb-6 shadow-sm">
+            {article.category || 'Kategori'}
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-black mb-6 leading-tight text-gray-900">
+          {/* MENERAPKAN DESAIN JUDUL LIVE PREVIEW */}
+          <h1 className="text-3xl md:text-5xl font-black mb-5 leading-tight text-gray-900 tracking-tight">
             {article.title}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-6 text-muted-foreground mb-8">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span className="text-sm font-medium">{article.author || 'Tim SpotKos'}</span>
+          {/* MENERAPKAN DESAIN META INFO LIVE PREVIEW */}
+          <div className="flex flex-wrap items-center gap-4 text-gray-500 text-sm font-medium mb-8 pb-6 border-b border-gray-100">
+            <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+              <User className="w-4 h-4 text-gray-400" />
+              <span>{article.author || 'Tim SpotKos'}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">{new Date(article.created_at || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <span>{new Date(article.created_at || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span className="text-sm font-medium">{article.read_time || '5 menit'}</span>
+            <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+              <Clock className="w-4 h-4 text-gray-400" />
+              <span>{article.read_time || '5 menit'} baca</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 mb-8 pb-8 border-b border-border">
+          <div className="flex items-center gap-4 mb-8">
             <span className="text-sm text-muted-foreground font-medium">Bagikan:</span>
             <button onClick={() => handleShare('facebook')} className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-full transition-colors">
               <Facebook className="w-5 h-5" />
@@ -150,7 +151,8 @@ export function ArticleDetail() {
             </button>
           </div>
 
-          <div className="aspect-[21/9] rounded-3xl overflow-hidden mb-12 shadow-sm border border-gray-100">
+          {/* MENERAPKAN DESAIN GAMBAR LIVE PREVIEW */}
+          <div className="aspect-video rounded-3xl overflow-hidden mb-12 shadow-sm border border-gray-100">
             <ImageWithFallback
               src={article.image || 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af'}
               alt={article.title}
@@ -159,35 +161,38 @@ export function ArticleDetail() {
           </div>
 
           <div className="prose prose-lg max-w-none text-gray-700">
-            {/* INTRO ARTIKEL */}
+            {/* MENERAPKAN DESAIN INTRO DROP-CAP LIVE PREVIEW */}
             {article.content?.intro && (
-              <p className="text-xl leading-relaxed mb-10 text-gray-600 font-medium">
+              <p className="text-base leading-loose mb-10 text-gray-700 first-letter:text-5xl first-letter:font-black first-letter:text-[#FF6B35] first-letter:mr-1 first-letter:float-left">
                 {article.content.intro}
               </p>
             )}
 
-            {/* SECTIONS / SUB-TOPIK ARTIKEL */}
-            {article.content?.sections?.map((section: any, index: number) => (
-              <div key={index} className="mb-10">
-                {/* PERBAIKAN: Gunakan subtitle alih-alih heading sesuai JSON database */}
-                {(section.subtitle || section.heading) && (
-                  <h2 className="text-2xl md:text-3xl font-bold mb-4 text-gray-900">
-                    {section.subtitle || section.heading}
-                  </h2>
-                )}
-                {/* PERBAIKAN: Gunakan dangerouslySetInnerHTML agar format baris dari admin terbaca rapi */}
-                <div 
-                  className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap"
-                  dangerouslySetInnerHTML={{ __html: section.content }}
-                />
-              </div>
-            ))}
+            {/* MENERAPKAN DESAIN SUB-TOPIK LIVE PREVIEW */}
+            <div className="space-y-10">
+              {article.content?.sections?.map((section: any, index: number) => (
+                <div key={index}>
+                  {(section.subtitle || section.heading) && (
+                    <h2 className="text-xl md:text-2xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+                      <div className="w-2 h-6 bg-[#FF6B35] rounded-full"></div> 
+                      {section.subtitle || section.heading}
+                    </h2>
+                  )}
+                  <div 
+                    className="text-base leading-loose text-gray-600 whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ __html: section.content }}
+                  />
+                </div>
+              ))}
+            </div>
 
-            {/* KESIMPULAN ARTIKEL */}
+            {/* MENERAPKAN DESAIN KESIMPULAN LIVE PREVIEW */}
             {article.content?.conclusion && (
-              <div className="mt-12 p-8 bg-orange-50/50 rounded-3xl border border-orange-100">
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Kesimpulan</h3>
-                <p className="text-lg leading-relaxed text-gray-700">
+              <div className="mt-12 p-6 bg-gradient-to-r from-orange-50 to-white rounded-2xl border-l-4 border-[#FF6B35] shadow-sm">
+                <h3 className="text-lg font-bold mb-3 text-gray-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-[#FF6B35]"/> Kesimpulan
+                </h3>
+                <p className="text-base leading-loose text-gray-700 font-medium whitespace-pre-wrap">
                   {article.content.conclusion}
                 </p>
               </div>
@@ -196,7 +201,7 @@ export function ArticleDetail() {
         </div>
       </article>
 
-      {/* Related Articles */}
+      {/* Related Articles - Tetap Dipertahankan */}
       <section className="py-16 bg-gray-50 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-black mb-8 text-gray-900">Artikel Terkait</h2>
