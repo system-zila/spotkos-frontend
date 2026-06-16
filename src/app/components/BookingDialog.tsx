@@ -27,7 +27,7 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
   const [selectedFloor, setSelectedFloor] = useState('');
   
   const today = new Date().toISOString().split('T')[0];
-  const BYPASS_ROOM_ID = 60001; 
+  const BYPASS_ROOM_ID = 30001; 
   const isBypassDate = room?.id === BYPASS_ROOM_ID;
 
   const selectedDuration = DURATION_OPTIONS.find((d) => d.value === duration)!;
