@@ -60,18 +60,18 @@ export function BookingHistory() {
             if (b.status === 'paid') uiStatus = 'confirmed';
             if (b.status === 'failed') uiStatus = 'cancelled';
 
-            // Logika ekstraksi gambar yang tangguh
+            // Menangkap semua kemungkinan nama kolom dari tabel database
             let finalImage = '';
-            const rawImage = b.roomImage || b.room_image || b.roomImages || b.room_images;
+            const rawImage = b.roomImage || b.room_image || b.image || b.roomImages || b.room_images || b.images;
 
             if (rawImage) {
               if (typeof rawImage === 'string') {
                 try {
-                  // Coba ekstrak jika formatnya JSON array '["url1.jpg", "url2.jpg"]'
+                  // Coba urai jika gambar tersimpan sebagai array JSON string '["url1", "url2"]'
                   const parsed = JSON.parse(rawImage);
                   finalImage = Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : rawImage;
                 } catch (e) {
-                  // Jika gagal di-parse, berarti sudah berupa URL string murni
+                  // Jika bukan JSON, asumsikan ini adalah URL string murni
                   finalImage = rawImage;
                 }
               } else if (Array.isArray(rawImage) && rawImage.length > 0) {
@@ -79,7 +79,7 @@ export function BookingHistory() {
               }
             }
 
-            // Antisipasi jika URL berupa path lokal (relatif) dari backend
+            // Tambahkan Base URL jika gambar menggunakan path direktori lokal
             if (finalImage && finalImage.startsWith('/')) {
               finalImage = `${import.meta.env.VITE_API_URL}${finalImage}`;
             }
