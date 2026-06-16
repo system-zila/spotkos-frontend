@@ -80,8 +80,11 @@ export function BookingHistory() {
             }
 
             // Tambahkan Base URL jika gambar menggunakan path direktori lokal
-            if (finalImage && finalImage.startsWith('/')) {
-              finalImage = `${import.meta.env.VITE_API_URL}${finalImage}`;
+            // Tambahkan Base URL secara otomatis jika gambar BUKAN link luar (http)
+            if (finalImage && !finalImage.startsWith('http')) {
+              const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, ''); // Buang slash di akhir URL jika ada
+              const imagePath = finalImage.startsWith('/') ? finalImage : `/${finalImage}`;
+              finalImage = `${baseUrl}${imagePath}`;
             }
 
             return { 
