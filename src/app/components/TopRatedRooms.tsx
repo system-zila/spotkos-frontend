@@ -107,7 +107,7 @@ export function TopRatedRooms({ filters }: TopRatedRoomsProps) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredRooms.slice(0, 4).map((room) => (
-              <div key={room.id} className="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 group">
+              <div key={room.id} className="flex flex-col h-full bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 group">
                 <Link to={`/kost/${room.id}`}>
                   <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                     <ImageWithFallback
@@ -125,7 +125,7 @@ export function TopRatedRooms({ filters }: TopRatedRoomsProps) {
                   </div>
                 </Link>
 
-                <div className="p-5 flex flex-col h-[220px]">
+                <div className="p-5 flex flex-col flex-1">
                   <Link to={`/kost/${room.id}`}>
                     <h3 className="text-lg font-bold text-gray-900 mb-1.5 line-clamp-1 group-hover:text-[#FF6B35] transition-colors">{room.name}</h3>
                   </Link>
