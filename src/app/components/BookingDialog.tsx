@@ -27,6 +27,8 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
   const [selectedFloor, setSelectedFloor] = useState('');
   
   const today = new Date().toISOString().split('T')[0];
+  const BYPASS_ROOM_ID = 60001; 
+  const isBypassDate = room?.id === BYPASS_ROOM_ID;
 
   const selectedDuration = DURATION_OPTIONS.find((d) => d.value === duration)!;
   
@@ -186,15 +188,16 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
                 </div>
               </div>
 
-              <div>
+<div>
                 <label className="text-gray-700 text-xs mb-1.5 block font-bold">Tanggal Masuk</label>
                 <input 
-                  type="date" min={today} required
+                  type="date" 
+                  min={isBypassDate ? undefined : today} 
+                  required
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm outline-none focus:border-[#FF6B35] transition-colors"
                   value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)}
                 />
               </div>
-
               <div>
                 <label className="text-gray-700 text-xs mb-1.5 block font-bold">Pilih Kamar / Lantai</label>
                 <select 
