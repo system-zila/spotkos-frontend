@@ -80,7 +80,8 @@ export function BookingDialog({ room, open, onOpenChange }: BookingDialogProps) 
           email: user?.email || "customer@example.com",
           phone: "081234567890", 
           amount: totalPrice,
-          kostName: room.name
+          kostName: room.name,
+          roomId: room.id
         }),
       });
 
