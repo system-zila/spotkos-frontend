@@ -176,10 +176,21 @@ export function AdminPanel() {
       fetchKostApprovals();
       fetch(`${import.meta.env.VITE_API_URL}/api/rooms`).then(res => res.json()).then(data => setRoomsData(data)).catch(err => console.error(err));
       fetch(`${import.meta.env.VITE_API_URL}/api/users`).then(res => res.json()).then(data => setUsersData(data)).catch(err => console.error(err));
-      fetch(`${import.meta.env.VITE_API_URL}/api/admin/transactions`).then(res => res.json()).then(data => setTransactionsData(data)).catch(err => console.error(err));
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/transactions`)
+        .then(res => res.json())
+        .then(data => {
+            setTransactionsData(Array.isArray(data) ? data : []);
+        })
+        .catch(err => { console.error(err); setTransactionsData([]); });
       fetch(`${import.meta.env.VITE_API_URL}/api/articles`).then(res => res.json()).then(data => setArticlesData(data)).catch(err => console.error(err));
       fetch(`${import.meta.env.VITE_API_URL}/api/tickets`).then(res => res.json()).then(data => setTickets(data)).catch(err => console.error(err));
-      fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos`).then(res => res.json()).then(data => setPromosData(data)).catch(err => console.error(err));
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos`)
+        .then(res => res.json())
+        .then(data => {
+            setPromosData(Array.isArray(data) ? data : []);
+        })
+        .catch(err => { console.error(err); setPromosData([]); });
+      
 
       // Koneksi WebSocket khusus untuk Notifikasi Real-time
       socketRef.current = io(import.meta.env.VITE_API_URL);
@@ -1009,7 +1020,7 @@ export function AdminPanel() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {filteredTransactions.length === 0 ? (
+                      {(!Array.isArray(filteredTransactions) || filteredTransactions.length === 0) ? (
                         <tr><td colSpan={6} className="p-8 text-center text-gray-400 font-medium">Belum ada transaksi pada periode ini.</td></tr>
                       ) : (
                         filteredTransactions.map((trx: any) => {
@@ -1138,36 +1149,38 @@ export function AdminPanel() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {promosData.length === 0 ? (
+                      {(!Array.isArray(promosData) || promosData.length === 0) ? (
                         <tr><td colSpan={5} className="py-8 text-center text-gray-400">Belum ada promo aktif.</td></tr>
-                      ) : promosData.map(promo => {
-                        const isExpired = new Date(promo.valid_until) < new Date();
-                        return (
-                          <tr key={promo.id}>
-                            <td className="py-4 font-bold text-[#FF6B35]">{promo.code}</td>
-                            <td className="py-4 uppercase text-xs font-bold text-gray-600">{promo.sector}</td>
-                            <td className="py-4">
-                              <div className="font-bold text-gray-900">Rp {parseInt(promo.discount_amount).toLocaleString('id-ID')}</div>
-                              {promo.min_purchase > 0 && <div className="text-[10px] text-red-500 font-bold">Min. Trx: Rp {parseInt(promo.min_purchase).toLocaleString('id-ID')}</div>}
-                            </td>
-                            <td className="py-4">
-                              <span className={`px-2 py-1 rounded-md text-xs font-bold ${isExpired ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                                {new Date(promo.valid_until).toLocaleDateString('id-ID')} {isExpired && '(Kedaluwarsa)'}
-                              </span>
-                            </td>
-                            <td className="py-4 text-center">
-                              <button 
-                                onClick={async () => {
-                                  await fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos/${promo.id}`, { method: 'DELETE' });
-                                  setPromosData(prev => prev.filter(p => p.id !== promo.id));
-                                  showToast('Promo dihapus');
-                                }}
-                                className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
-                              ><Trash2 className="w-4 h-4" /></button>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      ) : (
+                        promosData.map((promo: any) => {
+                          const isExpired = new Date(promo.valid_until) < new Date();
+                          return (
+                            <tr key={promo.id}>
+                              <td className="py-4 font-bold text-[#FF6B35]">{promo.code}</td>
+                              <td className="py-4 uppercase text-xs font-bold text-gray-600">{promo.sector}</td>
+                              <td className="py-4">
+                                <div className="font-bold text-gray-900">Rp {parseInt(promo.discount_amount).toLocaleString('id-ID')}</div>
+                                {promo.min_purchase > 0 && <div className="text-[10px] text-red-500 font-bold">Min. Trx: Rp {parseInt(promo.min_purchase).toLocaleString('id-ID')}</div>}
+                              </td>
+                              <td className="py-4">
+                                <span className={`px-2 py-1 rounded-md text-xs font-bold ${isExpired ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                                  {new Date(promo.valid_until).toLocaleDateString('id-ID')} {isExpired && '(Kedaluwarsa)'}
+                                </span>
+                              </td>
+                              <td className="py-4 text-center">
+                                <button 
+                                  onClick={async () => {
+                                    await fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos/${promo.id}`, { method: 'DELETE' });
+                                    setPromosData(prev => prev.filter(p => p.id !== promo.id));
+                                    showToast('Promo dihapus');
+                                  }}
+                                  className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                                ><Trash2 className="w-4 h-4" /></button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
