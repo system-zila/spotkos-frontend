@@ -170,41 +170,61 @@ export function AdminPanel() {
 
   useEffect(() => {
     if (isLoggedIn) {
-      fetchVerifications();
-      fetchWithdrawals();
-      fetchSupportChats();
-      fetchKostApprovals();
-      fetch(`${import.meta.env.VITE_API_URL}/api/rooms`).then(res => res.json()).then(data => setRoomsData(data)).catch(err => console.error(err));
-      fetch(`${import.meta.env.VITE_API_URL}/api/users`).then(res => res.json()).then(data => setUsersData(data)).catch(err => console.error(err));
-      fetch(`${import.meta.env.VITE_API_URL}/api/admin/transactions`)
-        .then(res => res.json())
-        .then(data => {
-            setTransactionsData(Array.isArray(data) ? data : []);
-        })
-        .catch(err => { console.error(err); setTransactionsData([]); });
-      fetch(`${import.meta.env.VITE_API_URL}/api/articles`).then(res => res.json()).then(data => setArticlesData(data)).catch(err => console.error(err));
-      fetch(`${import.meta.env.VITE_API_URL}/api/tickets`).then(res => res.json()).then(data => setTickets(data)).catch(err => console.error(err));
-      fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos`)
-        .then(res => res.json())
-        .then(data => {
-            setPromosData(Array.isArray(data) ? data : []);
-        })
-        .catch(err => { console.error(err); setPromosData([]); });
-      
+      // BUNGKUS SEMUA FUNGSI PENARIKAN DATA KE DALAM SATU WADAH
+      const fetchAllData = () => {
+        // 1. Data Utama (Fungsi yang sudah ada)
+        fetchVerifications();
+        fetchWithdrawals();
+        fetchSupportChats();
+        fetchKostApprovals();
 
-      // Koneksi WebSocket khusus untuk Notifikasi Real-time
+        // 2. Data Pelengkap (Inline Fetch)
+        fetch(`${import.meta.env.VITE_API_URL}/api/rooms`)
+          .then(res => res.json())
+          .then(data => setRoomsData(data))
+          .catch(err => console.error(err));
+
+        fetch(`${import.meta.env.VITE_API_URL}/api/users`)
+          .then(res => res.json())
+          .then(data => setUsersData(data))
+          .catch(err => console.error(err));
+
+        fetch(`${import.meta.env.VITE_API_URL}/api/articles`)
+          .then(res => res.json())
+          .then(data => setArticlesData(data))
+          .catch(err => console.error(err));
+
+        fetch(`${import.meta.env.VITE_API_URL}/api/tickets`)
+          .then(res => res.json())
+          .then(data => setTickets(data))
+          .catch(err => console.error(err));
+
+        // 3. Data Berisiko Tinggi (Dengan Pengaman Array)
+        fetch(`${import.meta.env.VITE_API_URL}/api/admin/transactions`)
+          .then(res => res.json())
+          .then(data => setTransactionsData(Array.isArray(data) ? data : []))
+          .catch(err => { console.error(err); setTransactionsData([]); });
+
+        fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos`)
+          .then(res => res.json())
+          .then(data => setPromosData(Array.isArray(data) ? data : []))
+          .catch(err => { console.error(err); setPromosData([]); });
+      };
+
+      // EKSEKUSI: Tarik langsung saat pertama kali login
+      fetchAllData();
+
+      // AUTO-REFRESH: Tarik ulang seluruh data setiap 5 detik di balik layar
+      const intervalId = setInterval(fetchAllData, 5000);
+
+      // KONEKSI SOCKET: Untuk interupsi instan tanpa perlu menunggu 5 detik (Khusus Chat & Penarikan Dana)
       socketRef.current = io(import.meta.env.VITE_API_URL);
+      socketRef.current.on('admin_withdrawal_update', () => { fetchWithdrawals(); });
+      socketRef.current.on('new_support_chat', () => { fetchSupportChats(); });
       
-      // Mendengarkan sinyal dari request penarikan baru
-      socketRef.current.on('admin_withdrawal_update', () => {
-        fetchWithdrawals(); // Otomatis refresh data jika ada pengajuan baru / update
-      });
-
-      socketRef.current.on('new_support_chat', () => {
-        fetchSupportChats(); // Tarik ulang data chat tanpa refresh halaman
-      });
-      
+      // PEMBERSIHAN MEMORI saat admin logout / pindah halaman
       return () => {
+        clearInterval(intervalId); 
         socketRef.current?.disconnect();
       };
     }
