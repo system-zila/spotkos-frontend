@@ -245,7 +245,7 @@ export function AdminPanel() {
 
     const tableData = filteredTransactions.map((trx, index) => {
       const revenue = parseInt(trx.total_price);
-      const profit = trx.status === 'paid' ? revenue * 0.05 : 0; 
+      const profit = trx.status === 'paid' ? revenue * 0.10 : 0; 
       
       if (trx.status === 'paid') {
         totalRevenue += revenue;
@@ -265,7 +265,7 @@ export function AdminPanel() {
 
     autoTable(doc, {
       startY: 35,
-      head: [['No', 'Invoice', 'Waktu', 'Kos', 'Nominal (Rp)', 'Untung 5% (Rp)', 'Status']],
+      head: [['No', 'Invoice', 'Waktu', 'Kos', 'Nominal (Rp)', 'Untung 10% (Rp)', 'Status']],
       body: tableData,
       foot: [['', '', '', 'TOTAL BERHASIL', `Rp ${totalRevenue.toLocaleString('id-ID')}`, `Rp ${totalProfit.toLocaleString('id-ID')}`, '']],
       theme: 'grid',
@@ -1015,7 +1015,7 @@ export function AdminPanel() {
                         <th className="p-4 font-bold uppercase tracking-wider text-xs">Detail Kos</th>
                         <th className="p-4 font-bold uppercase tracking-wider text-xs">Pengguna (Pembayar)</th>
                         <th className="p-4 font-bold uppercase tracking-wider text-xs">Nominal Transaksi</th>
-                        <th className="p-4 font-bold uppercase tracking-wider text-xs text-green-600">Untung (5% / Admin)</th>
+                        <th className="p-4 font-bold uppercase tracking-wider text-xs text-green-600">Untung (10% / Admin)</th>
                         <th className="p-4 font-bold uppercase tracking-wider text-xs text-center">Status</th>
                       </tr>
                     </thead>
@@ -1026,9 +1026,20 @@ export function AdminPanel() {
                         filteredTransactions.map((trx: any) => {
                           const isDigital = trx.category === 'pulsa' || trx.category === 'listrik';
                           const revenue = parseInt(trx.total_price || trx.amount || 0);
-                          
                           const isSuccess = trx.status === 'paid' || trx.status === 'success';
-                          const profit = isSuccess ? (isDigital ? 2000 : revenue * 0.05) : 0;
+                          
+                          // MATEMATIKA KEUNTUNGAN YANG BENAR
+                          let profit = 0;
+                          if (isSuccess) {
+                            if (isDigital) {
+                              profit = 2000; // Flat Rp 2.000 untuk digital
+                            } else {
+                              // Rumus Balik: (Total - Biaya Layanan 25rb) / 1.11 PPN = Harga Dasar Kos
+                              const basePrice = Math.round((revenue - 25000) / 1.11);
+                              // Untung SpotKos = Biaya Layanan + (Komisi 10% dari Pemilik Kos)
+                              profit = 25000 + (basePrice * 0.10);
+                            }
+                          }
                           
                           const titleDesc = isDigital ? trx.title : trx.kost_name;
                           const subDesc = isDigital ? `Kategori: ${trx.category?.toUpperCase() || '-'}` : trx.kost_location;
