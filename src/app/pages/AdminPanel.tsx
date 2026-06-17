@@ -18,7 +18,7 @@ import {
 
 // ===================== TYPES =====================
 
-type AdminSection = 'verification' | 'withdrawals' | 'customer-service' | 'articles' | 'users' | 'live-chat' | 'transactions' | 'kost-approval';
+type AdminSection = 'verification' | 'withdrawals' | 'customer-service' | 'articles' | 'users' | 'live-chat' | 'transactions' | 'kost-approval' | 'promos';
 
 interface OwnerVerification {
   id: string;
@@ -67,6 +67,8 @@ export function AdminPanel() {
   const [loginError, setLoginError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [promosData, setPromosData] = useState<any[]>([]);
+  const [promoForm, setPromoForm] = useState({ code: '', discount: '', sector: 'kos', min_purchase: '', valid_until: '' });
 
   const [section, setSection] = useState<AdminSection>('verification');
   const [verifications, setVerifications] = useState<any[]>([]);
@@ -177,6 +179,7 @@ export function AdminPanel() {
       fetch(`${import.meta.env.VITE_API_URL}/api/admin/transactions`).then(res => res.json()).then(data => setTransactionsData(data)).catch(err => console.error(err));
       fetch(`${import.meta.env.VITE_API_URL}/api/articles`).then(res => res.json()).then(data => setArticlesData(data)).catch(err => console.error(err));
       fetch(`${import.meta.env.VITE_API_URL}/api/tickets`).then(res => res.json()).then(data => setTickets(data)).catch(err => console.error(err));
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos`).then(res => res.json()).then(data => setPromosData(data)).catch(err => console.error(err));
 
       // Koneksi WebSocket khusus untuk Notifikasi Real-time
       socketRef.current = io(import.meta.env.VITE_API_URL);
@@ -487,6 +490,7 @@ export function AdminPanel() {
     { key: 'kost-approval', icon: Home, label: 'Panel Kos', badge: stats.pendingKosts },
     { key: 'withdrawals', icon: Wallet, label: 'Penarikan Saldo', badge: stats.pendingWithdrawals }, // Menu Baru
     { key: 'transactions', icon: Receipt, label: 'Data Transaksi' },
+    { key: 'promos', icon: Tag, label: 'Kelola Promo' },
     { key: 'live-chat', icon: MessageSquare, label: 'Live Chat (Support)' },
     { key: 'customer-service', icon: Mail, label: 'Tiket Bantuan', badge: stats.openTickets },
     { key: 'articles', icon: FileText, label: 'Kelola Artikel', badge: articlesData.length },
@@ -1000,7 +1004,7 @@ export function AdminPanel() {
                         <th className="p-4 font-bold uppercase tracking-wider text-xs">Detail Kos</th>
                         <th className="p-4 font-bold uppercase tracking-wider text-xs">Pengguna (Pembayar)</th>
                         <th className="p-4 font-bold uppercase tracking-wider text-xs">Nominal Transaksi</th>
-                        <th className="p-4 font-bold uppercase tracking-wider text-xs text-green-600">Untung (5%)</th>
+                        <th className="p-4 font-bold uppercase tracking-wider text-xs text-green-600">Untung (5% / Admin)</th>
                         <th className="p-4 font-bold uppercase tracking-wider text-xs text-center">Status</th>
                       </tr>
                     </thead>
@@ -1008,44 +1012,162 @@ export function AdminPanel() {
                       {filteredTransactions.length === 0 ? (
                         <tr><td colSpan={6} className="p-8 text-center text-gray-400 font-medium">Belum ada transaksi pada periode ini.</td></tr>
                       ) : (
-                        filteredTransactions.map((trx) => {
-                          const revenue = parseInt(trx.total_price);
-                          const profit = trx.status === 'paid' ? revenue * 0.05 : 0;
+                        filteredTransactions.map((trx: any) => {
+                          const isDigital = trx.category === 'pulsa' || trx.category === 'listrik';
+                          const revenue = parseInt(trx.total_price || trx.amount || 0);
+                          
+                          const isSuccess = trx.status === 'paid' || trx.status === 'success';
+                          const profit = isSuccess ? (isDigital ? 2000 : revenue * 0.05) : 0;
+                          
+                          const titleDesc = isDigital ? trx.title : trx.kost_name;
+                          const subDesc = isDigital ? `Kategori: ${trx.category?.toUpperCase() || '-'}` : trx.kost_location;
+
                           return (
-                            <tr key={trx.invoice_id} className="hover:bg-gray-50/50 transition-colors">
+                            <tr key={trx.invoice_id || trx.transaction_id} className="hover:bg-gray-50/50 transition-colors">
                               <td className="p-4">
-                                <div className="font-bold text-gray-900">{trx.invoice_id}</div>
-                                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1.5"><Clock className="w-3 h-3"/>{trx.datetime}</div>
+                                <div className="font-bold text-gray-900">{trx.invoice_id || trx.transaction_id}</div>
+                                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1.5"><Clock className="w-3 h-3"/>{trx.datetime || trx.created_at || '-'}</div>
                               </td>
                               <td className="p-4">
-                                <div className="font-bold text-gray-900 line-clamp-1">{trx.kost_name}</div>
-                                <div className="text-xs text-gray-500 mt-1">{trx.kost_location}</div>
+                                <div className="font-bold text-gray-900 line-clamp-1">{titleDesc}</div>
+                                <div className="text-xs text-gray-500 mt-1">{subDesc}</div>
                               </td>
                               <td className="p-4">
-                                <div className="font-bold text-gray-900">{trx.user_name}</div>
+                                <div className="font-bold text-gray-900">{trx.user_name || '-'}</div>
                                 <div className="text-xs text-gray-500 mt-1">{trx.user_email}</div>
                               </td>
                               <td className="p-4">
                                 <div className="font-bold text-gray-900 text-base">Rp {revenue.toLocaleString('id-ID')}</div>
                               </td>
                               <td className="p-4">
-                                <div className={`font-bold text-base ${trx.status === 'paid' ? 'text-green-600' : 'text-gray-400'}`}>
-                                  {trx.status === 'paid' ? `+ Rp ${profit.toLocaleString('id-ID')}` : 'Rp 0'}
+                                <div className={`font-bold text-base ${isSuccess ? 'text-green-600' : 'text-gray-400'}`}>
+                                  {isSuccess ? `+ Rp ${profit.toLocaleString('id-ID')}` : 'Rp 0'}
                                 </div>
                               </td>
                               <td className="p-4 text-center">
                                 <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                                  trx.status === 'paid' ? 'bg-green-50 text-green-600 border-green-200' :
+                                  isSuccess ? 'bg-green-50 text-green-600 border-green-200' :
                                   trx.status === 'failed' ? 'bg-red-50 text-red-600 border-red-200' :
                                   'bg-yellow-50 text-yellow-600 border-yellow-200'
                                 }`}>
-                                  {trx.status === 'paid' ? 'Berhasil' : trx.status === 'failed' ? 'Batal' : 'Menunggu'}
+                                  {isSuccess ? 'Berhasil' : trx.status === 'failed' ? 'Batal' : 'Menunggu'}
                                 </span>
                               </td>
                             </tr>
                           );
                         })
                       )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =================== KELOLA PROMO =================== */}
+          {section === 'promos' && (
+            <div className="animate-in fade-in duration-300 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* Form Tambah Promo */}
+              <div className="lg:col-span-1 bg-white rounded-3xl border border-gray-200 p-6 shadow-sm h-fit">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Buat Kode Promo</h2>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-bold text-gray-700">Kode Promo (Tanpa Spasi)</Label>
+                    <Input placeholder="Contoh: HEMATKOS50" className="mt-1 uppercase" value={promoForm.code} onChange={e => setPromoForm({...promoForm, code: e.target.value.toUpperCase().replace(/\s/g, '')})} />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-bold text-gray-700">Sektor Penggunaan</Label>
+                    <select value={promoForm.sector} onChange={e => setPromoForm({...promoForm, sector: e.target.value})} className="w-full mt-1 h-10 rounded-md border border-gray-200 px-3 text-sm outline-none focus:border-[#FF6B35]">
+                      <option value="kos">Sewa Kos</option>
+                      <option value="pulsa">Pulsa & Data</option>
+                      <option value="listrik">Token Listrik</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-bold text-gray-700">Nominal Diskon (Rp)</Label>
+                    <Input type="number" placeholder="50000" className="mt-1" value={promoForm.discount} onChange={e => setPromoForm({...promoForm, discount: e.target.value})} />
+                  </div>
+                  <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl space-y-3">
+                    <div>
+                      <Label className="text-sm font-bold text-[#FF6B35]">Minimal Pembelian (Opsional)</Label>
+                      <Input type="number" placeholder="Contoh: 100000" className="mt-1 border-orange-200 focus:border-[#FF6B35]" value={promoForm.min_purchase} onChange={e => setPromoForm({...promoForm, min_purchase: e.target.value})} />
+                      <p className="text-[10px] text-orange-600/70 mt-1">Cegah kerugian! Wajibkan user belanja minimal Rp X untuk pakai kode ini.</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-bold text-gray-700">Berlaku Sampai Tanggal</Label>
+                    <Input type="date" className="mt-1" value={promoForm.valid_until} onChange={e => setPromoForm({...promoForm, valid_until: e.target.value})} />
+                  </div>
+                  <Button 
+                    className="w-full bg-[#FF6B35] hover:bg-[#FF6B35]/90 font-bold mt-2"
+                    disabled={!promoForm.code || !promoForm.discount || !promoForm.valid_until}
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos`, {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({...promoForm, min_purchase: promoForm.min_purchase || 0})
+                        });
+                        if (res.ok) {
+                          showToast('Promo berhasil dibuat!');
+                          setPromoForm({ code: '', discount: '', sector: 'kos', min_purchase: '', valid_until: '' });
+                          fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos`).then(r => r.json()).then(setPromosData);
+                        }
+                      } catch (err) { showToast('Gagal terhubung ke server'); }
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Terbitkan Promo
+                  </Button>
+                </div>
+              </div>
+
+              {/* Tabel Daftar Promo */}
+              <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
+                <div className="p-5 border-b border-gray-100 bg-gray-50/50">
+                  <h2 className="text-lg font-bold text-gray-900">Promo Aktif & Berjalan</h2>
+                </div>
+                <div className="overflow-x-auto p-4">
+                  <table className="w-full text-sm text-left">
+                    <thead>
+                      <tr className="text-gray-500 border-b border-gray-200">
+                        <th className="pb-3 font-bold">Kode Promo</th>
+                        <th className="pb-3 font-bold">Sektor</th>
+                        <th className="pb-3 font-bold">Diskon / Syarat</th>
+                        <th className="pb-3 font-bold">Berakhir Pada</th>
+                        <th className="pb-3 font-bold text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {promosData.length === 0 ? (
+                        <tr><td colSpan={5} className="py-8 text-center text-gray-400">Belum ada promo aktif.</td></tr>
+                      ) : promosData.map(promo => {
+                        const isExpired = new Date(promo.valid_until) < new Date();
+                        return (
+                          <tr key={promo.id}>
+                            <td className="py-4 font-bold text-[#FF6B35]">{promo.code}</td>
+                            <td className="py-4 uppercase text-xs font-bold text-gray-600">{promo.sector}</td>
+                            <td className="py-4">
+                              <div className="font-bold text-gray-900">Rp {parseInt(promo.discount_amount).toLocaleString('id-ID')}</div>
+                              {promo.min_purchase > 0 && <div className="text-[10px] text-red-500 font-bold">Min. Trx: Rp {parseInt(promo.min_purchase).toLocaleString('id-ID')}</div>}
+                            </td>
+                            <td className="py-4">
+                              <span className={`px-2 py-1 rounded-md text-xs font-bold ${isExpired ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                                {new Date(promo.valid_until).toLocaleDateString('id-ID')} {isExpired && '(Kedaluwarsa)'}
+                              </span>
+                            </td>
+                            <td className="py-4 text-center">
+                              <button 
+                                onClick={async () => {
+                                  await fetch(`${import.meta.env.VITE_API_URL}/api/admin/promos/${promo.id}`, { method: 'DELETE' });
+                                  setPromosData(prev => prev.filter(p => p.id !== promo.id));
+                                  showToast('Promo dihapus');
+                                }}
+                                className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                              ><Trash2 className="w-4 h-4" /></button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
