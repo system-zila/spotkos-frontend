@@ -264,22 +264,34 @@ export function AdminPanel() {
     let totalProfit = 0;
 
     const tableData = filteredTransactions.map((trx, index) => {
-      const revenue = parseInt(trx.total_price);
-      const profit = trx.status === 'paid' ? revenue * 0.10 : 0; 
+      const isDigital = trx.category === 'pulsa' || trx.category === 'listrik';
+      const revenue = parseInt(trx.total_price || trx.amount || 0);
+      const isSuccess = trx.status === 'paid' || trx.status === 'success';
       
-      if (trx.status === 'paid') {
+      // Rumus cerdas yang sama dengan tampilan UI
+      let profit = 0;
+      if (isSuccess) {
+        if (isDigital) {
+          profit = 2000;
+        } else {
+          const basePrice = Math.round((revenue - 25000) / 1.11);
+          profit = 25000 + (basePrice * 0.10);
+        }
+      }
+      
+      if (isSuccess) {
         totalRevenue += revenue;
         totalProfit += profit;
       }
 
       return [
         index + 1,
-        trx.invoice_id,
-        trx.datetime,
-        trx.kost_name,
+        trx.invoice_id || trx.transaction_id,
+        trx.datetime || trx.created_at,
+        isDigital ? trx.title : trx.kost_name,
         `Rp ${revenue.toLocaleString('id-ID')}`,
-        trx.status === 'paid' ? `Rp ${profit.toLocaleString('id-ID')}` : 'Rp 0',
-        trx.status === 'paid' ? 'Berhasil' : trx.status === 'failed' ? 'Batal' : 'Menunggu'
+        isSuccess ? `Rp ${profit.toLocaleString('id-ID')}` : 'Rp 0',
+        isSuccess ? 'Berhasil' : trx.status === 'failed' ? 'Batal' : 'Menunggu'
       ];
     });
 
