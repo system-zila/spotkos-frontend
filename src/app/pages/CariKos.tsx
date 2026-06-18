@@ -19,6 +19,17 @@ const PRICE_RANGES = [
   { label: '> Rp 3jt', min: 3000000, max: Infinity },
 ];
 
+const formatPrice = (price: number) => {
+  if (!price) return '0';
+  if (price < 1000000) {
+    return price.toLocaleString('id-ID'); // Contoh: 800.000
+  } else if (price >= 1000000000) {
+    return `${(price / 1000000000).toFixed(1).replace('.0', '')}M`; // Contoh: 1.5M / 1M
+  } else {
+    return `${(price / 1000000).toFixed(1).replace('.0', '')}jt`; // Contoh: 1.5jt / 1jt
+  }
+};
+
 export function CariKos() {
   const [rooms, setRooms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,16 +40,6 @@ export function CariKos() {
   const [sortBy, setSortBy] = useState<'rating' | 'price-asc' | 'price-desc'>('rating');
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState(0);
-  const formatPrice = (price: number) => {
-  if (!price) return '0';
-  if (price < 1000000) {
-    return price.toLocaleString('id-ID'); // Contoh: 800.000
-  } else if (price >= 1000000000) {
-    return `${(price / 1000000000).toFixed(1).replace('.0', '')}M`; // Contoh: 1.5M / 1M
-  } else {
-    return `${(price / 1000000).toFixed(1).replace('.0', '')}jt`; // Contoh: 1.5jt / 1jt
-  }
-};
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
