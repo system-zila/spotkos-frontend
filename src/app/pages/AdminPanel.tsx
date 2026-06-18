@@ -84,7 +84,8 @@ export function AdminPanel() {
 
   // STATE TRANSAKSI
   const [transactionsData, setTransactionsData] = useState<any[]>([]);
-  const [trxFilter, setTrxFilter] = useState<'all' | 'week' | 'month' | 'year'>('all');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'week' | 'month' | 'year'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'kos' | 'qris' | 'listrik' | 'pulsa'>('all');
 
   const [kostApprovals, setKostApprovals] = useState<any[]>([]);
   const [kostFilter, setKostFilter] = useState<string>('pending');
@@ -236,78 +237,84 @@ export function AdminPanel() {
     }
   }, [activeChatEmail, supportChats, section]);
 
-  // ===================== LOGIKA PDF TRANSAKSI =====================
+// ===================== LOGIKA FILTER & PDF TRANSAKSI =====================
   const filteredTransactions = transactionsData.filter((trx) => {
-    if (trxFilter === 'all') return true;
+    // 1. Eksekusi Filter Kategori
+    if (categoryFilter !== 'all' && trx.category !== categoryFilter) return false;
+
+    // 2. Eksekusi Filter Waktu
+    if (timeFilter === 'all') return true;
     const trxDate = new Date(trx.raw_date || trx.datetime);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - trxDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (trxFilter === 'week') return diffDays <= 7;
-    if (trxFilter === 'month') return diffDays <= 30;
-    if (trxFilter === 'year') return diffDays <= 365;
+    if (timeFilter === 'week') return diffDays <= 7;
+    if (timeFilter === 'month') return diffDays <= 30;
+    if (timeFilter === 'year') return diffDays <= 365;
     return true;
   });
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
-    const filterLabel = trxFilter === 'all' ? 'Semua Waktu' : trxFilter === 'week' ? '7 Hari Terakhir' : trxFilter === 'month' ? '30 Hari Terakhir' : '1 Tahun Terakhir';
+    const timeLabel = timeFilter === 'all' ? 'Semua Waktu' : timeFilter === 'week' ? '7 Hari Terakhir' : timeFilter === 'month' ? '30 Hari Terakhir' : '1 Tahun Terakhir';
+    const catLabel = categoryFilter.toUpperCase();
     
     doc.setFontSize(16);
-    doc.text(`Laporan Pendapatan SpotKos (${filterLabel})`, 14, 20);
+    doc.text(`Laporan Pendapatan SpotKos - ${catLabel}`, 14, 20);
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Diunduh pada: ${new Date().toLocaleDateString('id-ID')} | Total: ${filteredTransactions.length} Transaksi`, 14, 28);
+    doc.text(`Periode: ${timeLabel} | Diunduh pada: ${new Date().toLocaleDateString('id-ID')} | Total: ${filteredTransactions.length} Transaksi`, 14, 28);
 
     let totalRevenue = 0;
     let totalProfit = 0;
 
     const tableData = filteredTransactions.map((trx, index) => {
-      const isDigital = trx.category === 'pulsa' || trx.category === 'listrik';
       const revenue = parseInt(trx.total_price || trx.amount || 0);
       const isSuccess = trx.status === 'paid' || trx.status === 'success';
       
-      // Rumus cerdas yang sama dengan tampilan UI
       let profit = 0;
       if (isSuccess) {
-        if (isDigital) {
-          profit = 2000;
-        } else {
+        if (trx.category === 'kos') {
           const basePrice = Math.round((revenue - 25000) / 1.11);
           profit = 25000 + (basePrice * 0.10);
+        } else if (trx.category === 'qris') {
+          profit = 500; 
+        } else {
+          profit = 2000; 
         }
       }
       
-      if (isSuccess) {
-        totalRevenue += revenue;
-        totalProfit += profit;
-      }
+      if (isSuccess) { totalRevenue += revenue; totalProfit += profit; }
 
-      return [
-        index + 1,
-        trx.invoice_id || trx.transaction_id,
-        trx.datetime || trx.created_at,
-        isDigital ? trx.title : trx.kost_name,
-        `Rp ${revenue.toLocaleString('id-ID')}`,
-        isSuccess ? `Rp ${profit.toLocaleString('id-ID')}` : 'Rp 0',
-        isSuccess ? 'Berhasil' : trx.status === 'failed' ? 'Batal' : 'Menunggu'
-      ];
+      const userText = `${trx.user_name || '-'} (${trx.user_email})`;
+      let itemDetail = '';
+      if (trx.category === 'kos') itemDetail = `${trx.kost_name}\n${trx.kost_location}`;
+      else if (trx.category === 'qris') itemDetail = `QRIS - ${trx.transaction_id}`; 
+      else itemDetail = trx.title;
+
+      if (categoryFilter === 'all') {
+         return [ index + 1, trx.invoice_id || trx.transaction_id, trx.datetime || trx.created_at, `${trx.category?.toUpperCase()}: ${itemDetail}`, userText, `Rp ${revenue.toLocaleString('id-ID')}`, isSuccess ? `Rp ${profit.toLocaleString('id-ID')}` : 'Rp 0', isSuccess ? 'Berhasil' : trx.status === 'failed' ? 'Batal' : 'Menunggu' ];
+      } else {
+         return [ index + 1, trx.invoice_id || trx.transaction_id, trx.datetime || trx.created_at, itemDetail, userText, `Rp ${revenue.toLocaleString('id-ID')}`, isSuccess ? `Rp ${profit.toLocaleString('id-ID')}` : 'Rp 0', isSuccess ? 'Berhasil' : trx.status === 'failed' ? 'Batal' : 'Menunggu' ];
+      }
     });
+
+    let head = [];
+    if (categoryFilter === 'kos') head = [['No', 'Invoice', 'Waktu', 'Detail Kos', 'Penyewa', 'Nominal (Rp)', 'Untung 10% (Rp)', 'Status']];
+    else if (categoryFilter === 'qris') head = [['No', 'Invoice', 'Waktu', 'Detail Merchant', 'Pembayar', 'Nominal (Rp)', 'Untung QRIS (Rp)', 'Status']];
+    else if (categoryFilter === 'pulsa' || categoryFilter === 'listrik') head = [['No', 'Invoice', 'Waktu', 'Detail Bukti', 'Pembeli', 'Nominal (Rp)', 'Biaya Admin (Rp)', 'Status']];
+    else head = [['No', 'Invoice', 'Waktu', 'Kategori & Item', 'Pengguna', 'Nominal (Rp)', 'Total Untung (Rp)', 'Status']];
 
     autoTable(doc, {
-      startY: 35,
-      head: [['No', 'Invoice', 'Waktu', 'Kos', 'Nominal (Rp)', 'Untung 10% (Rp)', 'Status']],
-      body: tableData,
+      startY: 35, head, body: tableData,
       foot: [['', '', '', 'TOTAL BERHASIL', `Rp ${totalRevenue.toLocaleString('id-ID')}`, `Rp ${totalProfit.toLocaleString('id-ID')}`, '']],
-      theme: 'grid',
-      headStyles: { fillColor: [255, 107, 53] }, 
-      footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
+      theme: 'grid', headStyles: { fillColor: [255, 107, 53] }, footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' }
     });
 
-    doc.save(`Laporan_SpotKos_${trxFilter}.pdf`);
+    doc.save(`Laporan_SpotKos_${categoryFilter}_${timeFilter}.pdf`);
   };
-
+  
   // ===================== HANDLERS =====================
   const showToast = (msg: string) => {
     setSuccessMsg(msg);
@@ -1015,25 +1022,40 @@ export function AdminPanel() {
             <div className="animate-in fade-in duration-300">
               <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
                 
-                <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50/50 gap-4">
+                <div className="p-5 border-b border-gray-100 flex flex-col xl:flex-row justify-between items-start xl:items-center bg-gray-50/50 gap-4">
                   <div>
                     <h2 className="text-lg font-bold text-gray-900">Data Transaksi & Keuntungan</h2>
                     <div className="text-sm text-gray-500 font-medium mt-1">Total: {filteredTransactions.length} Transaksi ditampilkan</div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    <div className="bg-white border border-gray-200 rounded-full flex overflow-hidden w-full md:w-auto shadow-sm">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full xl:w-auto">
+                    {/* Tombol Filter Waktu */}
+                    <div className="bg-white border border-gray-200 rounded-full flex overflow-hidden w-full lg:w-auto shadow-sm">
                       {['all', 'week', 'month', 'year'].map((f) => (
                         <button
                           key={f}
-                          onClick={() => setTrxFilter(f as any)}
-                          className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold transition-colors ${trxFilter === f ? 'bg-[#FF6B35] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                          onClick={() => setTimeFilter(f as any)}
+                          className={`flex-1 lg:flex-none px-4 py-2 text-xs font-bold transition-colors ${timeFilter === f ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
                         >
-                          {f === 'all' ? 'Semua' : f === 'week' ? '7 Hari' : f === 'month' ? '30 Hari' : '1 Tahun'}
+                          {f === 'all' ? 'Semua Waktu' : f === 'week' ? '7 Hari' : f === 'month' ? '30 Hari' : '1 Tahun'}
                         </button>
                       ))}
                     </div>
-                    <Button onClick={handleDownloadPDF} className="rounded-full font-bold bg-green-600 hover:bg-green-700 shadow-md w-full md:w-auto">
+
+                    {/* Tombol Filter Kategori */}
+                    <div className="bg-white border border-gray-200 rounded-full flex overflow-hidden w-full lg:w-auto shadow-sm">
+                      {['all', 'kos', 'qris', 'listrik', 'pulsa'].map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => setCategoryFilter(f as any)}
+                          className={`flex-1 lg:flex-none px-4 py-2 text-xs font-bold transition-colors uppercase ${categoryFilter === f ? 'bg-[#FF6B35] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                        >
+                          {f === 'all' ? 'Semua' : f}
+                        </button>
+                      ))}
+                    </div>
+
+                    <Button onClick={handleDownloadPDF} className="rounded-full font-bold bg-green-600 hover:bg-green-700 shadow-md w-full lg:w-auto shrink-0">
                       <Download className="w-4 h-4 mr-2" /> Download PDF
                     </Button>
                   </div>
@@ -1044,10 +1066,14 @@ export function AdminPanel() {
                     <thead>
                       <tr className="bg-gray-50 text-gray-500 border-b border-gray-200">
                         <th className="p-4 font-bold uppercase tracking-wider text-xs">No. Invoice & Waktu</th>
-                        <th className="p-4 font-bold uppercase tracking-wider text-xs">Detail Kos</th>
+                        <th className="p-4 font-bold uppercase tracking-wider text-xs">
+                          {categoryFilter === 'kos' ? 'Detail Kos' : categoryFilter === 'qris' ? 'Detail Merchant' : (categoryFilter === 'pulsa' || categoryFilter === 'listrik') ? 'Detail Bukti' : 'Kategori & Item'}
+                        </th>
                         <th className="p-4 font-bold uppercase tracking-wider text-xs">Pengguna (Pembayar)</th>
                         <th className="p-4 font-bold uppercase tracking-wider text-xs">Nominal Transaksi</th>
-                        <th className="p-4 font-bold uppercase tracking-wider text-xs text-green-600">Untung (10% / Admin)</th>
+                        <th className="p-4 font-bold uppercase tracking-wider text-xs text-green-600">
+                          {categoryFilter === 'kos' ? 'Untung (10% / Admin)' : categoryFilter === 'qris' ? 'Untung (QRIS)' : (categoryFilter === 'pulsa' || categoryFilter === 'listrik') ? 'Biaya Admin' : 'Total Untung Admin'}
+                        </th>
                         <th className="p-4 font-bold uppercase tracking-wider text-xs text-center">Status</th>
                       </tr>
                     </thead>
@@ -1056,25 +1082,39 @@ export function AdminPanel() {
                         <tr><td colSpan={6} className="p-8 text-center text-gray-400 font-medium">Belum ada transaksi pada periode ini.</td></tr>
                       ) : (
                         filteredTransactions.map((trx: any) => {
-                          const isDigital = trx.category === 'pulsa' || trx.category === 'listrik';
                           const revenue = parseInt(trx.total_price || trx.amount || 0);
                           const isSuccess = trx.status === 'paid' || trx.status === 'success';
                           
-                          // MATEMATIKA KEUNTUNGAN YANG BENAR
                           let profit = 0;
                           if (isSuccess) {
-                            if (isDigital) {
-                              profit = 2000; // Flat Rp 2.000 untuk digital
-                            } else {
-                              // Rumus Balik: (Total - Biaya Layanan 25rb) / 1.11 PPN = Harga Dasar Kos
+                            if (trx.category === 'kos') {
                               const basePrice = Math.round((revenue - 25000) / 1.11);
-                              // Untung SpotKos = Biaya Layanan + (Komisi 10% dari Pemilik Kos)
                               profit = 25000 + (basePrice * 0.10);
+                            } else if (trx.category === 'qris') {
+                              profit = 500;
+                            } else {
+                              profit = 2000;
                             }
                           }
                           
-                          const titleDesc = isDigital ? trx.title : trx.kost_name;
-                          const subDesc = isDigital ? `Kategori: ${trx.category?.toUpperCase() || '-'}` : trx.kost_location;
+                          let titleDesc = '';
+                          let subDesc = '';
+
+                          if (trx.category === 'kos') {
+                            titleDesc = trx.kost_name || 'Sewa Kos';
+                            subDesc = trx.kost_location || '-';
+                          } else if (trx.category === 'qris') {
+                            const parts = (trx.transaction_id || '').split('-');
+                            titleDesc = parts.length > 2 ? `Merchant: ${parts[1]}` : trx.title || 'Pembayaran QRIS';
+                            subDesc = trx.transaction_id || '-';
+                          } else {
+                            titleDesc = trx.title || 'Transaksi Digital';
+                            subDesc = trx.category?.toUpperCase() || '-';
+                          }
+
+                          if (categoryFilter === 'all') {
+                            subDesc = `${trx.category?.toUpperCase()} | ${subDesc}`;
+                          }
 
                           return (
                             <tr key={trx.invoice_id || trx.transaction_id} className="hover:bg-gray-50/50 transition-colors">
