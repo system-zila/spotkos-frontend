@@ -183,26 +183,38 @@ export function RoomDetail() {
             </div>
           </div>
 
-          {/* ===== GALERI FOTO ===== */}
-          {photoGallery.length <= 1 ? (
-            // Jika gambar cuma 1, bentangkan lebar 100% tanpa ada blok abu-abu kosong
-            <div className="w-full h-[300px] md:h-[450px] rounded-[32px] overflow-hidden bg-gray-100 mb-10 shadow-sm border border-gray-100">
-              <img src={mainPhoto} alt={room.name} className="w-full h-full object-cover" />
-            </div>
+          {/* ===== GALERI FOTO DINAMIS ===== */}
+          {photoGallery.length === 0 ? (
+             <div className="w-full h-[300px] md:h-[450px] rounded-[32px] overflow-hidden bg-gray-100 mb-10 shadow-sm border border-gray-100 flex items-center justify-center text-gray-400">Tidak ada foto</div>
+          ) : photoGallery.length === 1 ? (
+             // Skenario 1 Foto: Layar Penuh
+             <div className="w-full h-[300px] md:h-[450px] rounded-[32px] overflow-hidden bg-gray-100 mb-10 shadow-sm border border-gray-100">
+               <img src={mainPhoto} alt={room.name} className="w-full h-full object-cover" />
+             </div>
+          ) : photoGallery.length === 2 ? (
+             // Skenario 2 Foto: Dibagi 2 Kotak Sama Besar (Kiri & Kanan)
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 h-auto md:h-[450px]">
+               <div className="rounded-[32px] overflow-hidden bg-gray-100 h-full">
+                 <img src={mainPhoto} alt="Foto Utama" className="w-full h-full object-cover" />
+               </div>
+               <div className="rounded-[32px] overflow-hidden bg-gray-100 h-full">
+                 <img src={`${import.meta.env.VITE_API_URL}/${photoGallery[1]}`} alt="Foto 2" className="w-full h-full object-cover" />
+               </div>
+             </div>
           ) : (
-            // Jika gambar lebih dari 1, tampilkan grid keren seperti biasa
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 h-auto md:h-[450px]">
-              <div className="md:col-span-2 aspect-[4/3] md:aspect-auto rounded-[32px] overflow-hidden bg-gray-100 h-full">
-                <img src={mainPhoto} alt={room.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="hidden md:flex flex-col gap-4 h-full">
-                {photoGallery.slice(1, 3).map((img, idx) => (
-                  <div key={idx} className="flex-1 rounded-[32px] overflow-hidden bg-gray-100">
-                    <img src={`${import.meta.env.VITE_API_URL}/${img}`} alt={`Foto ${idx+2}`} className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-            </div>
+             // Skenario 3 Foto atau Lebih: Grid 3 Kotak Klasik
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 h-auto md:h-[450px]">
+               <div className="md:col-span-2 aspect-[4/3] md:aspect-auto rounded-[32px] overflow-hidden bg-gray-100 h-full">
+                 <img src={mainPhoto} alt={room.name} className="w-full h-full object-cover" />
+               </div>
+               <div className="hidden md:flex flex-col gap-4 h-full">
+                 {photoGallery.slice(1, 3).map((img, idx) => (
+                   <div key={idx} className="flex-1 rounded-[32px] overflow-hidden bg-gray-100">
+                     <img src={`${import.meta.env.VITE_API_URL}/${img}`} alt={`Foto Tambahan ${idx+2}`} className="w-full h-full object-cover" />
+                   </div>
+                 ))}
+               </div>
+             </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

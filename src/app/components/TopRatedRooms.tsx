@@ -6,6 +6,13 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { SearchFilters } from './SearchBar';
 import { useState, useEffect } from 'react';
 
+const formatPrice = (price: number) => {
+  if (!price) return '0';
+  if (price < 1000000) return price.toLocaleString('id-ID'); 
+  if (price >= 1000000000) return `${(price / 1000000000).toFixed(1).replace('.0', '')}M`; 
+  return `${(price / 1000000).toFixed(1).replace('.0', '')}jt`; 
+};
+
 interface TopRatedRoomsProps {
   filters?: SearchFilters | null;
 }
@@ -156,7 +163,7 @@ export function TopRatedRooms({ filters }: TopRatedRoomsProps) {
                     <div>
                       <div className="text-[10px] text-gray-400 font-medium mb-0.5">Mulai dari</div>
                       <div className="text-base font-black text-[#FF6B35]">
-                        Rp {(room.price / 1000000).toFixed(1)}jt<span className="text-[10px] font-medium text-gray-400">/bulan</span>
+                        Rp {formatPrice(room.price)}<span className="text-[10px] font-medium text-gray-400">/bulan</span>
                       </div>
                     </div>
                     <Link to={`/kost/${room.id}`}>
