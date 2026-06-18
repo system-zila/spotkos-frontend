@@ -1028,14 +1028,15 @@ export function AdminPanel() {
                     <div className="text-sm text-gray-500 font-medium mt-1">Total: {filteredTransactions.length} Transaksi ditampilkan</div>
                   </div>
 
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full xl:w-auto">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full xl:w-auto max-w-full">
+                    
                     {/* Tombol Filter Waktu */}
-                    <div className="bg-white border border-gray-200 rounded-full flex overflow-hidden w-full lg:w-auto shadow-sm">
+                    <div className="bg-white border border-gray-200 rounded-full flex overflow-x-auto w-full lg:w-auto shadow-sm custom-scrollbar">
                       {['all', 'week', 'month', 'year'].map((f) => (
                         <button
                           key={f}
                           onClick={() => setTimeFilter(f as any)}
-                          className={`flex-1 lg:flex-none px-4 py-2 text-xs font-bold transition-colors ${timeFilter === f ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                          className={`shrink-0 whitespace-nowrap flex-1 lg:flex-none px-5 py-2.5 text-xs font-bold transition-colors ${timeFilter === f ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
                         >
                           {f === 'all' ? 'Semua Waktu' : f === 'week' ? '7 Hari' : f === 'month' ? '30 Hari' : '1 Tahun'}
                         </button>
@@ -1043,12 +1044,12 @@ export function AdminPanel() {
                     </div>
 
                     {/* Tombol Filter Kategori */}
-                    <div className="bg-white border border-gray-200 rounded-full flex overflow-hidden w-full lg:w-auto shadow-sm">
+                    <div className="bg-white border border-gray-200 rounded-full flex overflow-x-auto w-full lg:w-auto shadow-sm custom-scrollbar">
                       {['all', 'kos', 'qris', 'listrik', 'pulsa'].map((f) => (
                         <button
                           key={f}
                           onClick={() => setCategoryFilter(f as any)}
-                          className={`flex-1 lg:flex-none px-4 py-2 text-xs font-bold transition-colors uppercase ${categoryFilter === f ? 'bg-[#FF6B35] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                          className={`shrink-0 whitespace-nowrap flex-1 lg:flex-none px-5 py-2.5 text-xs font-bold transition-colors uppercase ${categoryFilter === f ? 'bg-[#FF6B35] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
                         >
                           {f === 'all' ? 'Semua' : f}
                         </button>
