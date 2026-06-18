@@ -191,6 +191,10 @@ export function IndekosInput() {
   };
 
   const handleSubmitKos = async () => {
+    if (parseInt(form.price) > 50000000) {
+      alert("Gagal: Harga terlalu tinggi! Batas maksimal transaksi Midtrans untuk sewa per bulan adalah Rp 50.000.000. Silakan turunkan nominal harga kos Anda.");
+      return; 
+    }
     try {
       const formData = new FormData();
       formData.append('email', user?.email || '');
@@ -202,7 +206,7 @@ export function IndekosInput() {
       formData.append('description', form.description);
       formData.append('roomSize', form.roomSize);
       formData.append('capacity', form.capacity);
-
+      
       // ✅ LOGIKA BARU: Otomatis deteksi status Kamar Mandi dari Fasilitas
       const isKamarMandiDalam = form.facilities.includes('Kamar Mandi Dalam');
       formData.append('bathroom', isKamarMandiDalam ? 'Dalam' : 'Luar');
